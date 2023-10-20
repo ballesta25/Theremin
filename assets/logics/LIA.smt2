@@ -1,0 +1,18 @@
+(set-logic LRA)
+(synth-fun f ((x Real)) Real
+  ((y_real Real) (y_const_real Real) (y_bool Bool))
+  ((y_real Real (y_const_real
+                 (Variable Real)
+                 (- y_real)
+                 (+ y_real y_real)
+                 (- y_real y_real)
+                 (* y_const_real y_real)
+                 (* y_real y_const_real)
+                 (/ y_real y_const_real)
+                 (ite y_bool y_real y_real)))
+   (y_const_real Real ((Constant Real)))
+   (y_bool Bool ((= y_real y_real)
+                 (> y_real y_real)
+                 (>= y_real y_real)
+                 (< y_real y_real)
+                 (<= y_real y_real)))))
