@@ -1,0 +1,95 @@
+sygus = { SOI ~ cmd* ~ EOI }
+
+cmd = {
+    "(" ~ "assume" ~ term ~ ")"
+  | "(" ~ "check-synth" ~ ")"
+  | "(" ~ "chc-constraint" ~ "(" ~ sortedVar* ~ ")" ~ term ~ term ~ ")"
+  | "(" ~ "constraint" ~ term ~ ")"
+  | "(" ~ "declare-var" ~ symbol ~ sort ~ ")"
+  | "(" ~ "declare-weight" ~ symbol ~ attribute* ~ ")"
+  | "(" ~ "inv-constraint" ~ symbol ~ symbol ~ symbol ~ symbol ~ ")"
+  | "(" ~ "optimize-synth" ~ "(" ~ term* ~ ")" ~ attribute* ~ ")"
+  | "(" ~ "set-feature" ~ feature ~ boolConst ~ ")"
+  | "(" ~ "synth-fun" ~ symbol ~ "(" ~ sortedVar* ~ ")" ~ sort ~ grammarDef? ~ ")"
+  | oracleCmd
+  | smtCmd
+}
+
+oracleCmd = {
+    "(" ~ "oracle-assume" ~ "(" ~ sortedVar* ~ ")" ~ "(" ~ sortedVar* ~ ")" ~ term ~ symbol ~ ")"
+  | "(" ~ "oracle-constraint" ~ "(" ~ sortedVar ~ ")" ~ "(" ~ sortedVar ~ ")" ~ term ~ symbol ~ ")"
+  | "(" ~ "declare-oracle-fun" ~ symbol ~ "(" ~ sort ~ ")" ~ sort ~ symbol ~ ")"
+  | "(" ~ "oracle-constraint-io" ~ symbol ~ symbol ~ ")"
+  | "(" ~ "oracle-constraint-cex" ~ symbol ~ symbol ~ ")"
+  | "(" ~ "oracle-constraint-membership" ~ symbol ~ symbol ~ ")"
+  | "(" ~ "oracle-constraint-poswitness" ~ symbol ~ symbol ~ ")"
+  | "(" ~ "oracle-constraint-negwitness" ~ symbol ~ symbol ~ ")"
+  | "(" ~ "declare-correctness-oracle" ~ symbol ~ symbol ~ ")"
+  | "(" ~ "declare-correctness-cex-oracle" ~ symbol ~ symbol ~ ")"
+}
+
+smtCmd = {
+    "(" ~ "declare-datatype" ~ symbol ~ dtDecl ~ ")"
+  | "(" ~ "declare-datatypes" ~ "(" ~ sortDecl+ ~ ")" ~ "(" ~ dtDecl+ ~ ")" ~ ")"
+  | "(" ~ "declare-sort" ~ symbol ~ numeral ~ ")"
+  | "(" ~ "define-fun" ~ symbol ~ "(" ~ sortedVar* ~ ")" ~ sort ~ term ~ ")"
+  | "(" ~ "define-sort" ~ symbol ~ sort ~ ")"
+  | "(" ~ "set-info" ~ keyword ~ literal ~ ")"
+  | "(" ~ "set-logic" ~ symbol ~ ")"
+  | "(" ~ "set-option" ~ keyword ~ literal ~ ")"
+}
+
+sortDecl   = { "(" ~ symbol ~ numeral ~ ")" }
+dtDecl     = { "(" ~ dtConsDecl+ ~ ")" }
+dtConsDecl = { "(" ~ symbol ~ sortedVar* ~ ")" }
+
+grammarDef      = { "(" ~ sortedVar+ ~ ")" ~ "(" ~ groupedRuleList+ ~ ")" }
+groupedRuleList = { "(" ~ symbol ~ sort ~ "(" ~ gTerm+ ~ ")" ~ ")" }
+gTerm           = { "(" ~ "Constant" ~ sort ~ ")" | "(" ~ "Variable" ~ sort ~ ")" | bfTerm }
+
+feature = { ":grammar" | ":fwd-decls" | ":recursion" | ":oracles" | ":weights" }
+
+term = {
+    "(" ~ "let" ~ "(" ~ varBinding+ ~ ")" ~ term ~ ")"
+  | "(" ~ "forall" ~ "(" ~ sortedVar+ ~ ")" ~ term ~ ")"
+  | "(" ~ "exists" ~ "(" ~ sortedVar+ ~ ")" ~ term ~ ")"
+  | "(" ~ "!" ~ term ~ attribute+ ~ ")"
+  | "(" ~ identifier ~ term+ ~ ")"
+  | literal
+  | identifier
+}
+
+bfTerm = {
+    "(" ~ "!" ~ bfTerm ~ attribute+ ~ ")"
+  | "(" ~ identifier ~ bfTerm+ ~ ")"
+  | literal
+  | identifier
+}
+
+sortedVar  = { "(" ~ symbol ~ sort ~ ")" }
+varBinding = { "(" ~ symbol ~ term ~ ")" }
+
+sort = { identifier | "(" ~ identifier ~ sort+ ~ ")" }
+
+attribute      = { keyword | keyword ~ attributeValue }
+attributeValue = { literal | symbol }
+
+identifier = { symbol | "(" ~ "_" ~ symbol ~ index+ ~ ")" }
+index      = { numeral | symbol }
+
+keyword = @{ ":" ~ symbol }
+
+symbol      = @{ (ASCII_ALPHA | specialChar) ~ (ASCII_ALPHANUMERIC | specialChar)* }
+specialChar = @{ "_" | "+" | "-" | "*" | "&" | "|" | "!" | "~" | "<" | ">" | "=" | "/" | "%" | "?" | "." | "$" | "^" }
+
+literal     =  { numeral | decimal | boolConst | hexConst | binConst | stringConst }
+numeral     = @{ "0" | ASCII_NONZERO_DIGIT ~ ASCII_DIGIT* }
+decimal     = @{ numeral ~ "." ~ "0"* ~ numeral? }
+boolConst   = @{ "true" | "false" }
+hexConst    = @{ "#x" ~ ASCII_HEX_DIGIT }
+binConst    = @{ "#b" ~ ASCII_BIN_DIGIT }
+stringConst = @{ "\"" ~ ("\"\"" | !"\"" ~ ANY)* ~ "\"" }
+
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+
+COMMENT = _{ ";" ~ (!"\n" ~ ANY)* }
