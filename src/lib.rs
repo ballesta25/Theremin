@@ -1,7 +1,7 @@
 pub mod sygus;
 
 use egg::*;
-k
+
 pub fn add(left: usize, right: usize) -> usize {
     left + right
 }
