@@ -1,23 +1,36 @@
 sygus = { SOI ~ cmd* ~ EOI }
 
-cmd = {
-    "(" ~ "assume" ~ term ~ ")"
-  | "(" ~ "check-synth" ~ ")"
-  | "(" ~ "chc-constraint" ~ "(" ~ sortedVar* ~ ")" ~ term ~ term ~ ")"
-  | "(" ~ "constraint" ~ term ~ ")"
-  | "(" ~ "declare-var" ~ symbol ~ sort ~ ")"
-  | "(" ~ "declare-weight" ~ symbol ~ attribute* ~ ")"
-  | "(" ~ "inv-constraint" ~ symbol ~ symbol ~ symbol ~ symbol ~ ")"
-  | "(" ~ "optimize-synth" ~ "(" ~ term* ~ ")" ~ attribute* ~ ")"
-  | "(" ~ "set-feature" ~ feature ~ boolConst ~ ")"
-  | "(" ~ "synth-fun" ~ symbol ~ "(" ~ sortedVar* ~ ")" ~ sort ~ grammarDef? ~ ")"
-  | oracleCmd
-  | smtCmd
+cmd = _{
+    assume
+  | check_synth
+  | chc_constraint
+  | constraint
+  | declare_var
+  | declare_weight
+  | inv_constraint
+  | optimize_synth
+  | set_feature
+  | synth_fun
+  | oracle_cmd
+  | smt_cmd
 }
 
-oracleCmd = {
-    "(" ~ "oracle-assume" ~ "(" ~ sortedVar* ~ ")" ~ "(" ~ sortedVar* ~ ")" ~ term ~ symbol ~ ")"
-  | "(" ~ "oracle-constraint" ~ "(" ~ sortedVar ~ ")" ~ "(" ~ sortedVar ~ ")" ~ term ~ symbol ~ ")"
+assume         = { "(" ~ "assume" ~ term ~ ")" }
+check_synth    = { "(" ~ "check-synth" ~ ")" }
+chc_constraint = { "(" ~ "chc-constraint" ~ "(" ~ sorted_var* ~ ")" ~ term ~ term ~ ")" }
+constraint     = { "(" ~ "constraint" ~ term ~ ")" }
+declare_var    = { "(" ~ "declare-var" ~ symbol ~ sort ~ ")" }
+declare_weight = { "(" ~ "declare-weight" ~ symbol ~ attribute* ~ ")" }
+inv_constraint = { "(" ~ "inv-constraint" ~ symbol ~ symbol ~ symbol ~ symbol ~ ")" }
+optimize_synth = { "(" ~ "optimize-synth" ~ "(" ~ term* ~ ")" ~ attribute* ~ ")" }
+set_feature    = { "(" ~ "set-feature" ~ feature ~ bool_const ~ ")" }
+
+synth_fun  = { "(" ~ "synth-fun" ~ symbol ~ "(" ~ parameters ~ ")" ~ sort ~ grammar_def? ~ ")" }
+parameters = { sorted_var* }
+
+oracle_cmd = {
+    "(" ~ "oracle-assume" ~ "(" ~ sorted_var* ~ ")" ~ "(" ~ sorted_var* ~ ")" ~ term ~ symbol ~ ")"
+  | "(" ~ "oracle-constraint" ~ "(" ~ sorted_var ~ ")" ~ "(" ~ sorted_var ~ ")" ~ term ~ symbol ~ ")"
   | "(" ~ "declare-oracle-fun" ~ symbol ~ "(" ~ sort ~ ")" ~ sort ~ symbol ~ ")"
   | "(" ~ "oracle-constraint-io" ~ symbol ~ symbol ~ ")"
   | "(" ~ "oracle-constraint-cex" ~ symbol ~ symbol ~ ")"
@@ -28,67 +41,78 @@ oracleCmd = {
   | "(" ~ "declare-correctness-cex-oracle" ~ symbol ~ symbol ~ ")"
 }
 
-smtCmd = {
-    "(" ~ "declare-datatype" ~ symbol ~ dtDecl ~ ")"
-  | "(" ~ "declare-datatypes" ~ "(" ~ sortDecl+ ~ ")" ~ "(" ~ dtDecl+ ~ ")" ~ ")"
-  | "(" ~ "declare-sort" ~ symbol ~ numeral ~ ")"
-  | "(" ~ "define-fun" ~ symbol ~ "(" ~ sortedVar* ~ ")" ~ sort ~ term ~ ")"
-  | "(" ~ "define-sort" ~ symbol ~ sort ~ ")"
-  | "(" ~ "set-info" ~ keyword ~ literal ~ ")"
-  | "(" ~ "set-logic" ~ symbol ~ ")"
-  | "(" ~ "set-option" ~ keyword ~ literal ~ ")"
+smt_cmd = _{
+    declare_datatype
+  | declare_datatypes
+  | declare_sort
+  | define_fun
+  | define_sort
+  | set_info
+  | set_logic
+  | set_option
 }
 
-sortDecl   = { "(" ~ symbol ~ numeral ~ ")" }
-dtDecl     = { "(" ~ dtConsDecl+ ~ ")" }
-dtConsDecl = { "(" ~ symbol ~ sortedVar* ~ ")" }
+declare_datatype  = { "(" ~ "declare-datatype" ~ symbol ~ dt_decl ~ ")" }
+declare_datatypes = { "(" ~ "declare-datatypes" ~ "(" ~ sort_decl+ ~ ")" ~ "(" ~ dt_decl+ ~ ")" ~ ")" }
+declare_sort      = { "(" ~ "declare-sort" ~ symbol ~ numeral ~ ")" }
+define_fun        = { "(" ~ "define-fun" ~ symbol ~ "(" ~ sorted_var* ~ ")" ~ sort ~ term ~ ")" }
+define_sort       = { "(" ~ "define-sort" ~ symbol ~ sort ~ ")" }
+set_info          = { "(" ~ "set-info" ~ keyword ~ literal ~ ")" }
+set_logic         = { "(" ~ "set-logic" ~ symbol ~ ")" }
+set_option        = { "(" ~ "set-option" ~ keyword ~ literal ~ ")" }
 
-grammarDef      = { "(" ~ sortedVar+ ~ ")" ~ "(" ~ groupedRuleList+ ~ ")" }
-groupedRuleList = { "(" ~ symbol ~ sort ~ "(" ~ gTerm+ ~ ")" ~ ")" }
-gTerm           = { "(" ~ "Constant" ~ sort ~ ")" | "(" ~ "Variable" ~ sort ~ ")" | bfTerm }
+sort_decl    = { "(" ~ symbol ~ numeral ~ ")" }
+dt_decl      = { "(" ~ dt_cons_decl+ ~ ")" }
+dt_cons_decl = { "(" ~ symbol ~ sorted_var* ~ ")" }
+
+grammar_def       = { "(" ~ sorted_var+ ~ ")" ~ "(" ~ grouped_rule_list+ ~ ")" }
+grouped_rule_list = { "(" ~ symbol ~ sort ~ "(" ~ g_term+ ~ ")" ~ ")" }
+
+g_term   = { constant | variable | bf_term }
+constant = { "(" ~ "Constant" ~ sort ~ ")" }
+variable = { "(" ~ "Variable" ~ sort ~ ")" }
 
 feature = { ":grammar" | ":fwd-decls" | ":recursion" | ":oracles" | ":weights" }
 
 term = {
-    "(" ~ "let" ~ "(" ~ varBinding+ ~ ")" ~ term ~ ")"
-  | "(" ~ "forall" ~ "(" ~ sortedVar+ ~ ")" ~ term ~ ")"
-  | "(" ~ "exists" ~ "(" ~ sortedVar+ ~ ")" ~ term ~ ")"
+    "(" ~ "let" ~ "(" ~ var_binding+ ~ ")" ~ term ~ ")"
+  | "(" ~ "forall" ~ "(" ~ sorted_var+ ~ ")" ~ term ~ ")"
+  | "(" ~ "exists" ~ "(" ~ sorted_var+ ~ ")" ~ term ~ ")"
   | "(" ~ "!" ~ term ~ attribute+ ~ ")"
   | "(" ~ identifier ~ term+ ~ ")"
   | literal
   | identifier
 }
 
-bfTerm = {
-    "(" ~ "!" ~ bfTerm ~ attribute+ ~ ")"
-  | "(" ~ identifier ~ bfTerm+ ~ ")"
-  | literal
-  | identifier
-}
+bf_term        = { bf_attributes | bf_application | literal | identifier }
+bf_attributes  = { "(" ~ "!" ~ bf_term ~ attribute+ ~ ")" }
+bf_application = { "(" ~ identifier ~ bf_term+ ~ ")" }
 
-sortedVar  = { "(" ~ symbol ~ sort ~ ")" }
-varBinding = { "(" ~ symbol ~ term ~ ")" }
+sorted_var  = { "(" ~ symbol ~ sort ~ ")" }
+var_binding = { "(" ~ symbol ~ term ~ ")" }
 
-sort = { identifier | "(" ~ identifier ~ sort+ ~ ")" }
+sort             = _{ sort_identifier | sort_application }
+sort_identifier  =  { identifier }
+sort_application =  { "(" ~ identifier ~ sort+ ~ ")" }
 
-attribute      = { keyword | keyword ~ attributeValue }
-attributeValue = { literal | symbol }
+attribute       = { keyword | keyword ~ attribute_value }
+attribute_value = { literal | symbol }
 
 identifier = { symbol | "(" ~ "_" ~ symbol ~ index+ ~ ")" }
 index      = { numeral | symbol }
 
 keyword = @{ ":" ~ symbol }
 
-symbol      = @{ (ASCII_ALPHA | specialChar) ~ (ASCII_ALPHANUMERIC | specialChar)* }
-specialChar = @{ "_" | "+" | "-" | "*" | "&" | "|" | "!" | "~" | "<" | ">" | "=" | "/" | "%" | "?" | "." | "$" | "^" }
+symbol       = @{ (ASCII_ALPHA | special_char) ~ (ASCII_ALPHANUMERIC | special_char)* }
+special_char = @{ "_" | "+" | "-" | "*" | "&" | "|" | "!" | "~" | "<" | ">" | "=" | "/" | "%" | "?" | "." | "$" | "^" }
 
-literal     =  { numeral | decimal | boolConst | hexConst | binConst | stringConst }
-numeral     = @{ "0" | ASCII_NONZERO_DIGIT ~ ASCII_DIGIT* }
-decimal     = @{ numeral ~ "." ~ "0"* ~ numeral? }
-boolConst   = @{ "true" | "false" }
-hexConst    = @{ "#x" ~ ASCII_HEX_DIGIT }
-binConst    = @{ "#b" ~ ASCII_BIN_DIGIT }
-stringConst = @{ "\"" ~ ("\"\"" | !"\"" ~ ANY)* ~ "\"" }
+literal      =  { numeral | decimal | bool_const | hex_const | bin_const | string_const }
+numeral      = @{ "0" | ASCII_NONZERO_DIGIT ~ ASCII_DIGIT* }
+decimal      = @{ numeral ~ "." ~ "0"* ~ numeral? }
+bool_const   = @{ "true" | "false" }
+hex_const    = @{ "#x" ~ ASCII_HEX_DIGIT }
+bin_const    = @{ "#b" ~ ASCII_BIN_DIGIT }
+string_const = @{ "\"" ~ ("\"\"" | !"\"" ~ ANY)* ~ "\"" }
 
 WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
 
