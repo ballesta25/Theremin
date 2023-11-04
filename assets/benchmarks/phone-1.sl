@@ -8,12 +8,12 @@
     (ntBool Bool (true false (str.prefixof ntString ntString) (str.suffixof ntString ntString) (str.contains ntString ntString)))))
 
 (declare-var name String)
-(constraint (= (f "Ducati100") "Ducati"))
-(constraint (= (f "Honda125") "Honda"))
-(constraint (= (f "Ducati250") "Ducati"))
-(constraint (= (f "Honda250") "Honda"))
-(constraint (= (f "Honda550") "Honda"))
-(constraint (= (f "Ducati125") "Ducati"))
+(constraint (= (f "938-242-504") "242"))
+(constraint (= (f "308-916-545") "916"))
+(constraint (= (f "623-599-749") "599"))
+(constraint (= (f "981-424-843") "424"))
+(constraint (= (f "118-980-214") "980"))
+(constraint (= (f "244-655-094") "655"))
 
 (check-synth)
 
