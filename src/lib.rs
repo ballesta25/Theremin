@@ -1,3 +1,4 @@
+pub mod enumerate;
 pub mod sygus;
 
 use egg::{rewrite as rw, *};

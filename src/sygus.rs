@@ -1,6 +1,5 @@
-use pest::error::Error;
-use pest::iterators::Pair;
-use pest::Parser;
+use core::fmt;
+use pest::{error::Error, iterators::Pair, Parser};
 use pest_derive::Parser;
 use std::collections::HashMap;
 use substring::Substring;
@@ -18,22 +17,22 @@ pub struct SygusParser;
 #[derive(Debug)]
 pub struct Conjecture {
     /// A list of functions f_1,...,f_n to synthesize
-    functions_to_synthesize: Vec<Function>,
+    pub functions_to_synthesize: Vec<Function>,
     /// A list of variables v_1,...,v_m, known as the universal variables
-    universal_variables: Vec<String>,
+    pub universal_variables: Vec<String>,
     /// A list of formulas φ = φ_1, ..., φ_q, known as the current constraints
-    constraints: Vec<i32>,
+    pub constraints: Vec<i32>,
     /// A list of formulas α = α_1, ..., α_r, known as the current assumptions
-    assumptions: Vec<i32>,
+    pub assumptions: Vec<i32>,
     /// The set of defined symbols in the current scope
-    signature: HashMap<String, i32>,
+    pub signature: HashMap<String, i32>,
     /// The SyGuS logic
-    logic: Option<String>,
+    pub logic: Option<String>,
 }
 
 impl Conjecture {
-    pub fn new() -> Conjecture {
-        Conjecture {
+    pub fn new() -> Self {
+        Self {
             functions_to_synthesize: Vec::new(),
             universal_variables: Vec::new(),
             constraints: Vec::new(),
@@ -44,24 +43,30 @@ impl Conjecture {
     }
 }
 
+impl Default for Conjecture {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug)]
 pub struct Function {
-    name: String,
-    parameters: Vec<(String, Sort)>,
-    return_sort: Sort,
-    grammar: Grammar,
+    pub name: String,
+    pub parameters: Vec<(String, Sort)>,
+    pub return_sort: Sort,
+    pub grammar: Grammar,
 }
 
 #[derive(Debug)]
 pub struct Grammar {
-    declarations: Vec<(String, Sort)>,
-    rules: Vec<(String, Sort, Vec<GTerm>)>,
+    pub declarations: Vec<(String, Sort)>,
+    pub rules: Vec<(String, Sort, Vec<GTerm>)>,
 }
 
 #[derive(Debug)]
 pub enum GTerm {
-    Constant(Sort),
-    Variable(Sort),
+    // Constant(Sort),
+    // Variable(Sort),
     BFTerm(BFTerm),
 }
 
@@ -79,7 +84,7 @@ pub enum BFTerm {
     // Annotated(Box<BFTerm>, Vec<Attribute>), // Unimplemented
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Literal {
     Numeral(i64),
     Decimal(f64),
@@ -87,8 +92,43 @@ pub enum Literal {
     String(String),
 }
 
-pub fn parse_sygus_file(file: &str) -> Result<Conjecture, Error<Rule>> {
-    let sygus = SygusParser::parse(Rule::sygus, &file)?.next().unwrap();
+impl fmt::Display for Literal {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Literal::Numeral(n) => write!(f, "{}", n),
+            Literal::Decimal(n) => write!(f, "{}", n),
+            Literal::Bool(true) => write!(f, "true"),
+            Literal::Bool(false) => write!(f, "false"),
+            Literal::String(s) => write!(f, "\"{}\"", s.replace('"', "\\\"")),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum Term {
+    Identifier(String),
+    Literal(Literal),
+    Application(String, Vec<Term>),
+}
+
+impl fmt::Display for Term {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Term::Application(name, terms) => {
+                write!(f, "({}", name)?;
+                for term in terms {
+                    write!(f, " {}", term)?;
+                }
+                write!(f, ")")
+            }
+            Term::Identifier(name) => write!(f, "{}", name),
+            Term::Literal(lit) => write!(f, "{}", lit),
+        }
+    }
+}
+
+pub fn parse_sygus_file(file: &str) -> Result<Conjecture, Box<Error<Rule>>> {
+    let sygus = SygusParser::parse(Rule::sygus, file)?.next().unwrap();
     Ok(parse_conjecture(sygus))
 }
 
@@ -103,7 +143,6 @@ fn parse_conjecture(pair: Pair<Rule>) -> Conjecture {
             Rule::synth_fun => {
                 let mut inner_rules = pair.into_inner();
                 let name = inner_rules.next().unwrap().as_str().to_string();
-                println!("name: {}", name);
                 let parameters: Vec<(String, Sort)> = inner_rules
                     .next()
                     .unwrap()
@@ -178,8 +217,8 @@ fn parse_grammar(pair: Pair<Rule>) -> Grammar {
 fn parse_g_term(pair: Pair<Rule>) -> GTerm {
     let pair = pair.into_inner().next().unwrap();
     match pair.as_rule() {
-        Rule::constant => GTerm::Constant(parse_sort(pair.into_inner().next().unwrap())),
-        Rule::variable => GTerm::Variable(parse_sort(pair.into_inner().next().unwrap())),
+        // Rule::constant => GTerm::Constant(parse_sort(pair.into_inner().next().unwrap())),
+        // Rule::variable => GTerm::Variable(parse_sort(pair.into_inner().next().unwrap())),
         Rule::bf_term => GTerm::BFTerm(parse_bf_term(pair)),
         _ => unimplemented!("Unsupported g_term: {:#?}", pair),
     }
@@ -188,7 +227,7 @@ fn parse_g_term(pair: Pair<Rule>) -> GTerm {
 fn parse_bf_term(pair: Pair<Rule>) -> BFTerm {
     let pair = pair.into_inner().next().unwrap();
     match pair.as_rule() {
-        Rule::bf_attributes => unimplemented!("Unsupported bf_attributes"),
+        // Rule::bf_attributes => unimplemented!("Unsupported bf_attributes"),
         Rule::bf_application => {
             let mut inner_rules = pair.into_inner();
             let identifier = inner_rules.next().unwrap().as_str().to_string();
