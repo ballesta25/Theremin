@@ -19,6 +19,12 @@ static grammar_rules: Lazy<[Rewrite<SLIALang, Spec>; 5]> = Lazy::new(|| {
 fn build_egraph(examples: Spec) -> EGraph<SLIALang, Spec> {
     let mut graph: EGraph<SLIALang, Spec> = Default::default();
 
+    let start: RecExpr<SLIALang> = "(Bool 0)".parse().unwrap();
+
+    let rules = grammar_rules.clone();
+
+    let runner = Runner::default().with_expr(&start).run(&rules);
+
     graph
 }
 
@@ -29,6 +35,12 @@ pub fn add(left: usize, right: usize) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn run_build_egraph() {
+        let g = build_egraph(());
+        println!("{:#?}", g);
+    }
 
     #[test]
     fn it_works() {
