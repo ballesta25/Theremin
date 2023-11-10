@@ -9,11 +9,12 @@ pub type Spec = ();
 
 static grammar_rules: Lazy<[Rewrite<SLIALang, Spec>; 5]> = Lazy::new(|| {
     [
-        rw!("eq"; "(Bool n)" => "(= (S(n)) int int)"),
-        rw!("gt"; "(Bool n)" => "(> (S(n)) int int)"),
-        rw!("ge"; "(Bool n)" => "(>= (S(n)) int int)"),
-        rw!("lt"; "(Bool n)" => "(< (S(n)) int int)"),
-        rw!("le"; "(Bool n)" => "(<= (S(n)) int int)"),
+        // need to index 'int', not '='&c.
+        rw!("eq"; "(Bool ?s)" => "(= (int (eq0 ?s)) (int (eq1 ?s)))"),
+        rw!("gt"; "(Bool ?s)" => "(> (int (gt0 ?s)) (int (gt1 ?s)))"),
+        rw!("ge"; "(Bool ?s)" => "(>= (int (ge0 ?s)) (int (ge1 ?s)))"),
+        rw!("lt"; "(Bool ?s)" => "(< (int (lt0 ?s)) (int (lt1 ?s)))"),
+        rw!("le"; "(Bool ?s)" => "(<= (int (le0 ?s)) (int (le1 ?s)))"),
     ]
 });
 
@@ -26,6 +27,7 @@ fn build_egraph(examples: Spec) -> EGraph<SLIALang, Spec> {
 
     let runner = Runner::default().with_expr(&start).run(&rules);
 
+    println!("{:#?}", runner);
     graph
 }
 
@@ -40,7 +42,6 @@ mod tests {
     #[test]
     fn run_build_egraph() {
         let g = build_egraph(());
-        println!("{:#?}", g);
     }
 
     #[test]
