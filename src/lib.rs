@@ -7,9 +7,41 @@ use once_cell::sync::Lazy;
 pub type SLIALang = SymbolLang;
 pub type Spec = ();
 
+pub struct SLIASpec;
+impl Analysis<SLIALang> for SLIASpec {
+    type Data = Option<Spec>;
+
+    fn merge(&mut self, to: &mut Self::Data, from: Self::Data) -> DidMerge {
+        merge_option(to, from, |x, y| DidMerge(true, true))
+    }
+
+    fn make(egraph: &EGraph<SLIALang, Self>, enode: &SLIALang) -> Self::Data {
+        match enode {
+            // inverse semantics here
+            _ => None,
+        }
+    }
+}
+
+struct EvalCostFn;
+impl CostFunction<SLIALang> for EvalCostFn {
+    // (wrong_count, num_holes, size)
+    type Cost = (usize, usize, usize);
+    fn cost<C>(&mut self, enode: &SLIALang, mut costs: C) -> Self::Cost
+    where
+        C: FnMut(Id) -> Self::Cost,
+    {
+        let (wrong, holes, size) = enode.fold((0, 0, 1), |(a, b, c), id| {
+            let (a1, b1, c1) = costs(id);
+            (a + a1, b + b1, c + c1)
+        });
+        // eval to check for wrong examples; check if enode *is* a hole
+        (wrong, holes, size)
+    }
+}
+
 static grammar_rules: Lazy<[Rewrite<SLIALang, Spec>; 5]> = Lazy::new(|| {
     [
-        // need to index 'int', not '='&c.
         rw!("eq"; "(Bool ?s)" => "(= (int (eq0 ?s)) (int (eq1 ?s)))"),
         rw!("gt"; "(Bool ?s)" => "(> (int (gt0 ?s)) (int (gt1 ?s)))"),
         rw!("ge"; "(Bool ?s)" => "(>= (int (ge0 ?s)) (int (ge1 ?s)))"),
