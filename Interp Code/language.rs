@@ -133,3 +133,12 @@ pub trait Eval {
     fn eval(&self, env: &HashMap<String, Term>) -> Term;
 
 }
+impl Expr {
+
+    pub fn rcall(arg : Func) -> Expr {
+
+        Expr::Call(Box::new(arg))
+
+    } 
+
+}

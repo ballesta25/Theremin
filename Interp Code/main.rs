@@ -38,12 +38,23 @@ fn main() {
     //let expr : Term = Ok(Expr::Call(ezB2(Func::SubStr(Expr::ConstStr(String::from("Hello")), Expr::ConstInt(4), Expr::ConstInt(0)))));
     //let expr : Term = Ok(Expr::Call(ezB2(Func::IsPre(Expr::ConstStr(String::from("HelloFromTheWorld")), Expr::ConstStr(String::from("Hello World"))))));
     //let expr : Term = Ok(Expr::Call(ezB2(Func::Index(Expr::ConstStr(String::from("Hello")), Expr::ConstStr(String::from("")), Expr::ConstInt(3)))));
-    let expr : Term = Ok(Expr::Call(ezB2(Func::Replace(Expr::ConstStr(String::from("Hello")), Expr::ConstStr(String::from("z")), Expr::ConstStr(String::from("Hi"))))));
+    //let expr : Term = Ok(Expr::Call(ezB2(Func::Replace(Expr::ConstStr(String::from("Hello")), Expr::ConstStr(String::from("z")), Expr::ConstStr(String::from("Hi"))))));
+
+
+
+    map.entry(String::from("Arg0")).or_insert(Ok(Expr::ConstStr(String::from("Fibbonacci200"))));
+    
+    let expr : Term = Ok(Expr::rcall(Func::SubStr (Expr::Var(String::from("Arg0")), Expr::ConstInt(0), Expr::rcall(Func::Min(Expr::rcall(Func::StrLen(Expr::Var(String::from("Arg0")))), Expr::ConstInt(3))))));
+
 
     
+
+    //let expr : Term = Ok(Expr::Call(ezB2(Func::SubStr(Expr::ConstStr(String::from("Hello")), Expr::ConstInt(4)))));
     
     let j = expr.eval(&map);
     println!("{:?}", j);
+
+
 
  
 
