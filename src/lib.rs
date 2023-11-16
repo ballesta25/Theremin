@@ -5,29 +5,33 @@ pub mod language;
 pub mod sygus;
 
 use egg::{rewrite as rw, *};
+use language::*;
 use once_cell::sync::Lazy;
 
 pub type SLIALang = SymbolLang;
+#[derive(Clone, Debug, Default)]
 pub enum Spec {
     Examples(Vec<(Expr, Expr)>),
     Impossible,
+    #[default]
     Indeterminate,
 }
+use Spec::*;
 
-pub struct SLIASpec {
-    spec: Spec,
-}
-impl Analysis<SLIALang> for SLIASpec {
-    type Data = Option<Spec>;
+impl Analysis<SLIALang> for Spec {
+    type Data = Spec;
 
     fn merge(&mut self, to: &mut Self::Data, from: Self::Data) -> DidMerge {
-        merge_option(to, from, |x, y| DidMerge(true, true))
+        match (to, from) {
+            (Impossible, Impossible) => DidMerge(false, false),
+            (_, _) => DidMerge(true, true), // fixme
+        }
     }
 
     fn make(egraph: &EGraph<SLIALang, Self>, enode: &SLIALang) -> Self::Data {
         match enode {
             // inverse semantics here
-            _ => None,
+            _ => Indeterminate,
         }
     }
 }
@@ -60,11 +64,11 @@ impl CostFunction<SLIALang> for EvalCostFn {
 
 static grammar_rules: Lazy<[Rewrite<SLIALang, Spec>; 6]> = Lazy::new(|| {
     [
-        rw!("eq"; "(Bool ?s)" => "(= (Int (inv (eq0 ?s)) (Int (inv (eq1 ?s))))"),
-        rw!("gt"; "(Bool ?s)" => "(> (Int (inv (gt0 ?s)) (Int (inv (gt1 ?s))))"),
-        rw!("ge"; "(Bool ?s)" => "(>= (Int (inv (ge0 ?s)) (Int (inv (ge1 ?s))))"),
-        rw!("lt"; "(Bool ?s)" => "(< (Int (inv (lt0 ?s)) (Int (inv (lt1 ?s))))"),
-        rw!("le"; "(Bool ?s)" => "(<= (Int (inv (le0 ?s)) (Int (inv (le1 ?s))))"),
+        rw!("eq"; "(Bool ?s)" => "(= (Int (inv (eq0 ?s))) (Int (inv (eq1 ?s))))"),
+        rw!("gt"; "(Bool ?s)" => "(> (Int (inv (gt0 ?s))) (Int (inv (gt1 ?s))))"),
+        rw!("ge"; "(Bool ?s)" => "(>= (Int (inv (ge0 ?s))) (Int (inv (ge1 ?s))))"),
+        rw!("lt"; "(Bool ?s)" => "(< (Int (inv (lt0 ?s))) (Int (inv (lt1 ?s))))"),
+        rw!("le"; "(Bool ?s)" => "(<= (Int (inv (le0 ?s))) (Int (inv (le1 ?s))))"),
         rw!("int_hole"; "(Int ?s)" => "(hole Int ?s)"),
     ]
 });
@@ -92,7 +96,7 @@ mod tests {
 
     #[test]
     fn run_build_egraph() {
-        let runner = build_egraph(());
+        let runner = build_egraph(Indeterminate);
         let extractor = Extractor::new(&runner.egraph, EvalCostFn);
         let ((cost_a, cost_b, cost_c), best) = extractor.find_best(runner.roots[0]);
         println!(
