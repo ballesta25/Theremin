@@ -1,13 +1,22 @@
 pub mod enumerate;
+pub mod inverse;
+pub mod language;
+pub mod interpreter;
 pub mod sygus;
 
 use egg::{rewrite as rw, *};
 use once_cell::sync::Lazy;
 
 pub type SLIALang = SymbolLang;
-pub type Spec = ();
+pub enum Spec {
+    Examples(Vec<(Expr, Expr)>),
+    Impossible,
+    Indeterminate,
+}
 
-pub struct SLIASpec;
+pub struct SLIASpec {
+    spec: Spec,
+}
 impl Analysis<SLIALang> for SLIASpec {
     type Data = Option<Spec>;
 
@@ -44,18 +53,18 @@ impl CostFunction<SLIALang> for EvalCostFn {
         if enode.matches(&matches_hole) {
             holes += 1;
         }
-        // eval to check for wrong example
+        // eval to check for wrong examples
         (wrong, holes, size)
     }
 }
 
 static grammar_rules: Lazy<[Rewrite<SLIALang, Spec>; 6]> = Lazy::new(|| {
     [
-        rw!("eq"; "(Bool ?s)" => "(= (Int (eq0 ?s)) (Int (eq1 ?s)))"),
-        rw!("gt"; "(Bool ?s)" => "(> (Int (gt0 ?s)) (Int (gt1 ?s)))"),
-        rw!("ge"; "(Bool ?s)" => "(>= (Int (ge0 ?s)) (Int (ge1 ?s)))"),
-        rw!("lt"; "(Bool ?s)" => "(< (Int (lt0 ?s)) (Int (lt1 ?s)))"),
-        rw!("le"; "(Bool ?s)" => "(<= (Int (le0 ?s)) (Int (le1 ?s)))"),
+        rw!("eq"; "(Bool ?s)" => "(= (Int (inv (eq0 ?s)) (Int (inv (eq1 ?s))))"),
+        rw!("gt"; "(Bool ?s)" => "(> (Int (inv (gt0 ?s)) (Int (inv (gt1 ?s))))"),
+        rw!("ge"; "(Bool ?s)" => "(>= (Int (inv (ge0 ?s)) (Int (inv (ge1 ?s))))"),
+        rw!("lt"; "(Bool ?s)" => "(< (Int (inv (lt0 ?s)) (Int (inv (lt1 ?s))))"),
+        rw!("le"; "(Bool ?s)" => "(<= (Int (inv (le0 ?s)) (Int (inv (le1 ?s))))"),
         rw!("int_hole"; "(Int ?s)" => "(hole Int ?s)"),
     ]
 });
@@ -69,7 +78,7 @@ fn build_egraph(examples: Spec) -> Runner<SLIALang, Spec> {
 
     let runner = Runner::default().with_expr(&start).run(&rules);
 
-    //println!("{:#?}", runner);
+    println!("{:#?}", runner);
     runner
 }
 
@@ -86,7 +95,10 @@ mod tests {
         let runner = build_egraph(());
         let extractor = Extractor::new(&runner.egraph, EvalCostFn);
         let ((cost_a, cost_b, cost_c), best) = extractor.find_best(runner.roots[0]);
-        println!("Result: {} with cost {}", best, cost_b);
+        println!(
+            "Result: {} with cost: {} wrong, {} holes, {} size",
+            best, cost_a, cost_b, cost_c
+        );
     }
 
     #[test]
