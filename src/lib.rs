@@ -1,4 +1,6 @@
 pub mod enumerate;
+pub mod interpreter;
+pub mod language;
 pub mod sygus;
 
 use egg::{rewrite as rw, *};
