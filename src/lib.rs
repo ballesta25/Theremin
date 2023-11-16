@@ -31,26 +31,33 @@ impl CostFunction<SLIALang> for EvalCostFn {
     where
         C: FnMut(Id) -> Self::Cost,
     {
-        let (wrong, holes, size) = enode.fold((0, 0, 1), |(a, b, c), id| {
+        let (mut wrong, mut holes, size) = enode.fold((0, 0, 1), |(a, b, c), id| {
             let (a1, b1, c1) = costs(id);
             (a + a1, b + b1, c + c1)
         });
+        let mut dummy_vec = Vec::<Id>::new();
+        dummy_vec.push(0.into());
+        let matches_hole = SymbolLang::new("hole", dummy_vec);
+        if enode.matches(&matches_hole) {
+            holes += 1;
+        }
         // eval to check for wrong examples; check if enode *is* a hole
         (wrong, holes, size)
     }
 }
 
-static grammar_rules: Lazy<[Rewrite<SLIALang, Spec>; 5]> = Lazy::new(|| {
+static grammar_rules: Lazy<[Rewrite<SLIALang, Spec>; 6]> = Lazy::new(|| {
     [
-        rw!("eq"; "(Bool ?s)" => "(= (int (eq0 ?s)) (int (eq1 ?s)))"),
-        rw!("gt"; "(Bool ?s)" => "(> (int (gt0 ?s)) (int (gt1 ?s)))"),
-        rw!("ge"; "(Bool ?s)" => "(>= (int (ge0 ?s)) (int (ge1 ?s)))"),
-        rw!("lt"; "(Bool ?s)" => "(< (int (lt0 ?s)) (int (lt1 ?s)))"),
-        rw!("le"; "(Bool ?s)" => "(<= (int (le0 ?s)) (int (le1 ?s)))"),
+        rw!("eq"; "(Bool ?s)" => "(= (Int (eq0 ?s)) (Int (eq1 ?s)))"),
+        rw!("gt"; "(Bool ?s)" => "(> (Int (gt0 ?s)) (Int (gt1 ?s)))"),
+        rw!("ge"; "(Bool ?s)" => "(>= (Int (ge0 ?s)) (Int (ge1 ?s)))"),
+        rw!("lt"; "(Bool ?s)" => "(< (Int (lt0 ?s)) (Int (lt1 ?s)))"),
+        rw!("le"; "(Bool ?s)" => "(<= (Int (le0 ?s)) (Int (le1 ?s)))"),
+        rw!("int_hole"; "(Int ?s)" => "(hole (Int ?s))"),
     ]
 });
 
-fn build_egraph(examples: Spec) -> EGraph<SLIALang, Spec> {
+fn build_egraph(examples: Spec) -> Runner<SLIALang, Spec> {
     let mut graph: EGraph<SLIALang, Spec> = Default::default();
 
     let start: RecExpr<SLIALang> = "(Bool 0)".parse().unwrap();
@@ -59,8 +66,8 @@ fn build_egraph(examples: Spec) -> EGraph<SLIALang, Spec> {
 
     let runner = Runner::default().with_expr(&start).run(&rules);
 
-    println!("{:#?}", runner);
-    graph
+    //println!("{:#?}", runner);
+    runner
 }
 
 pub fn add(left: usize, right: usize) -> usize {
@@ -73,7 +80,10 @@ mod tests {
 
     #[test]
     fn run_build_egraph() {
-        let g = build_egraph(());
+        let runner = build_egraph(());
+        let extractor = Extractor::new(&runner.egraph, EvalCostFn);
+        let ((cost_a, cost_b, cost_c), best) = extractor.find_best(runner.roots[0]);
+        println!("Result: {} with cost {}", best, cost_b);
     }
 
     #[test]
