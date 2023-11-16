@@ -35,13 +35,16 @@ impl CostFunction<SLIALang> for EvalCostFn {
             let (a1, b1, c1) = costs(id);
             (a + a1, b + b1, c + c1)
         });
+
+        //check if enode *is* a hole
         let mut dummy_vec = Vec::<Id>::new();
+        dummy_vec.push(0.into());
         dummy_vec.push(0.into());
         let matches_hole = SymbolLang::new("hole", dummy_vec);
         if enode.matches(&matches_hole) {
             holes += 1;
         }
-        // eval to check for wrong examples; check if enode *is* a hole
+        // eval to check for wrong example
         (wrong, holes, size)
     }
 }
@@ -53,7 +56,7 @@ static grammar_rules: Lazy<[Rewrite<SLIALang, Spec>; 6]> = Lazy::new(|| {
         rw!("ge"; "(Bool ?s)" => "(>= (Int (ge0 ?s)) (Int (ge1 ?s)))"),
         rw!("lt"; "(Bool ?s)" => "(< (Int (lt0 ?s)) (Int (lt1 ?s)))"),
         rw!("le"; "(Bool ?s)" => "(<= (Int (le0 ?s)) (Int (le1 ?s)))"),
-        rw!("int_hole"; "(Int ?s)" => "(hole (Int ?s))"),
+        rw!("int_hole"; "(Int ?s)" => "(hole Int ?s)"),
     ]
 });
 
