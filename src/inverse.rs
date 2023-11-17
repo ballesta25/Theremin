@@ -125,15 +125,74 @@ pub fn invert(spec : &Spec, symbol : &str) -> Spec {
  
              },
 
+
+
+             "append0" => {
+
+                let mut j = 0;
+
+                let temp : Vec<Option<(Expr, Expr)>>  = a.iter().map(|(i , o)| {
+                    
+                    match (i,o) {
+                        
+                        (Expr::ConstStr(inn), Expr::ConstStr(out)) => {
+                            
+                            if let Some(k) = inn.find(out) {   
+                                let ilen = &inn.len();
+                                let olen = &out.len();
+
+                                if k as i32 == 0 && (j == 0 || j == 1){
+
+                                    j = 1;
+
+                                    Some((i.clone(), Expr::ConstStr(
+                                        
+                                        out
+                                        .chars()
+                                        .skip(*ilen)
+                                        .take(*olen)
+                                        .collect::<String>())))
+
+                                } else if k == olen - ilen && (j == 0 || j == 2) {
+                                    
+                                    j = 2;
+
+                                    Some((i.clone(), Expr::ConstStr( out.chars().take(olen - ilen).collect::<String>())))
+
+                                } else {
+                                    
+                                    j = 3;
+                                    None
+
+                                }
+
+
+                            } else {
+
+                                None // If 
+                            }
+                            
+                        }, 
+                        _ => None // If pattern doesn't match return none
+
+                    }
+                
+                
+                } ).collect();
+                
+                unwrap_vec(temp)
+
+
+             },
+
             //   append0: => {
 
             //         this one will be interesting because it only makes sense to use append if our output is 
             //         either consistently appended to the end or appended to the beginning but not both, 
             //         That will be interesting. 
-            //         I will also need to be checking to see if the output is ONLY an append op. as if it isn't we will need to bla bla bla
-            //         got it. 
-            //          String.find returns an option type, so for a given entry I will assign a -1 if on left 1 if on right and 0 if not found
-            //          Or if it's more complex than a substring relation. 
+            //         I will also need to be checking to see if the output is ONLY an append, ie either the input string starts at 0
+            //          or the input string starts at out.len() - in.len()
+            //          
 
                  
                 
