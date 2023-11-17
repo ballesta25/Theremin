@@ -129,7 +129,8 @@ pub fn invert(spec : &Spec, symbol : &str) -> Spec {
 
              "append0" => {
 
-                let mut j = 0;
+                let mut j = 0; // this is so that we can track if the append is being used at the beginning or end
+                
 
                 let temp : Vec<Option<(Expr, Expr)>>  = a.iter().map(|(i , o)| {
                     
@@ -143,25 +144,19 @@ pub fn invert(spec : &Spec, symbol : &str) -> Spec {
 
                                 if k as i32 == 0 && (j == 0 || j == 1){
 
-                                    j = 1;
+                                    j = 1; //this example uses prepend instead of append and no prior examples used append
 
-                                    Some((i.clone(), Expr::ConstStr(
-                                        
-                                        out
-                                        .chars()
-                                        .skip(*ilen)
-                                        .take(*olen)
-                                        .collect::<String>())))
+                                    Some((i.clone(), i.clone()))
 
                                 } else if k == olen - ilen && (j == 0 || j == 2) {
                                     
-                                    j = 2;
+                                    j = 2; // this example uses append instead of prepend and no prior examples use prepend
 
                                     Some((i.clone(), Expr::ConstStr( out.chars().take(olen - ilen).collect::<String>())))
 
                                 } else {
                                     
-                                    j = 3;
+                                    j = 3; // this example has used violated the prepend only/ append only, all future examples will be ignored
                                     None
 
                                 }
@@ -169,7 +164,7 @@ pub fn invert(spec : &Spec, symbol : &str) -> Spec {
 
                             } else {
 
-                                None // If 
+                                None // some example wasn't using append
                             }
                             
                         }, 
@@ -185,24 +180,88 @@ pub fn invert(spec : &Spec, symbol : &str) -> Spec {
 
              },
 
-            //   append0: => {
+             "append1" => {
 
-            //         this one will be interesting because it only makes sense to use append if our output is 
-            //         either consistently appended to the end or appended to the beginning but not both, 
-            //         That will be interesting. 
-            //         I will also need to be checking to see if the output is ONLY an append, ie either the input string starts at 0
-            //          or the input string starts at out.len() - in.len()
-            //          
-
-                 
+                let mut j = 0; // this is so that we can track if the append is being used at the beginning or end
                 
 
+                let temp : Vec<Option<(Expr, Expr)>>  = a.iter().map(|(i , o)| {
+                    
+                    match (i,o) {
                         
+                        (Expr::ConstStr(inn), Expr::ConstStr(out)) => {
+                            
+                            if let Some(k) = inn.find(out) {   
+                                let ilen = &inn.len();
+                                let olen = &out.len();
+
+                                if k as i32 == 0 && (j == 0 || j == 1){
+
+                                    j = 1; //this example uses prepend instead of append and no prior examples used append
+
+                                    Some((i.clone(), Expr::ConstStr( out.chars().take(olen - ilen).collect::<String>())))
+
+                                } else if k == olen - ilen && (j == 0 || j == 2) {
+                                    
+                                    j = 2; // this example uses append instead of prepend and no prior examples use prepend
+
+                                    Some((i.clone(), i.clone()))
+
+                                } else {
+                                    
+                                    j = 3; // this example has used violated the prepend only/ append only, all future examples will be ignored
+                                    None
+
+                                }
 
 
+                            } else {
+
+                                None // some example wasn't using append
+                            }
+                            
+                        }, 
+                        _ => None // If pattern doesn't match return none
+
+                    }
+                
+                
+                } ).collect();
+                
+                unwrap_vec(temp)
 
 
-            //   },
+             },
+
+
+             "StrLen0" => {
+
+                let temp : Vec<Option<(Expr, Expr)>>  = a.iter().map(|(i , o)| {
+                    
+                    match (i,o) {
+                        
+                        (Expr::ConstStr(inn), Expr::ConstInt(out)) => {
+                            
+                            if *out == inn.len() as i32 { // just make sure the length actually matches
+                                Some((Expr::ConstStr(inn.clone()), Expr::ConstStr(inn.clone())))
+                            } else {
+                                None
+                            }
+                            
+                        }, 
+                        _ => None
+
+                    }
+                
+                
+                } ).collect();
+                
+                unwrap_vec(temp)
+
+            },
+            
+                 
+             
 
 
 
