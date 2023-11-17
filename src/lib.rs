@@ -7,6 +7,7 @@ pub mod sygus;
 use egg::{rewrite as rw, *};
 use language::*;
 use once_cell::sync::Lazy;
+use std::collections::HashMap;
 
 pub type SLIALang = SymbolLang;
 #[derive(Clone, Debug, Default)]
@@ -38,11 +39,15 @@ impl Analysis<SLIALang> for Spec {
 
 struct EvalCostFn<'a> {
     egraph: &'a EGraph<SLIALang, Spec>,
+    component_fills: &'a mut HashMap<Id, Expr>,
 }
 
 impl<'a> EvalCostFn<'a> {
-    fn new(egraph: &'a EGraph<SLIALang, Spec>) -> Self {
-        Self { egraph }
+    fn new(egraph: &'a EGraph<SLIALang, Spec>, component_fills: &'a mut HashMap<Id, Expr>) -> Self {
+        Self {
+            egraph,
+            component_fills,
+        }
     }
 }
 
@@ -106,7 +111,9 @@ mod tests {
     #[test]
     fn run_build_egraph() {
         let (egraph, runner) = build_egraph(Indeterminate);
-        let extractor = Extractor::new(&runner.egraph, EvalCostFn::new(&egraph));
+        let mut fills = HashMap::new();
+        let cost_function = EvalCostFn::new(&egraph, &mut fills);
+        let extractor = Extractor::new(&runner.egraph, cost_function);
         let ((cost_a, cost_b, cost_c), best) = extractor.find_best(runner.roots[0]);
         println!(
             "Result: {} with cost: {} wrong, {} holes, {} size",
