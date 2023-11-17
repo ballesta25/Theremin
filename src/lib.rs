@@ -36,8 +36,17 @@ impl Analysis<SLIALang> for Spec {
     }
 }
 
-struct EvalCostFn;
-impl CostFunction<SLIALang> for EvalCostFn {
+struct EvalCostFn<'a> {
+    egraph: &'a EGraph<SLIALang, Spec>,
+}
+
+impl<'a> EvalCostFn<'a> {
+    fn new(egraph: &'a EGraph<SLIALang, Spec>) -> Self {
+        Self { egraph }
+    }
+}
+
+impl<'a> CostFunction<SLIALang> for EvalCostFn<'a> {
     // (wrong_count, num_holes, size)
     type Cost = (usize, usize, usize);
     fn cost<C>(&mut self, enode: &SLIALang, mut costs: C) -> Self::Cost
@@ -73,8 +82,8 @@ static grammar_rules: Lazy<[Rewrite<SLIALang, Spec>; 6]> = Lazy::new(|| {
     ]
 });
 
-fn build_egraph(examples: Spec) -> Runner<SLIALang, Spec> {
-    let mut graph: EGraph<SLIALang, Spec> = Default::default();
+fn build_egraph(examples: Spec) -> (EGraph<SLIALang, Spec>, Runner<SLIALang, Spec>) {
+    let graph: EGraph<SLIALang, Spec> = Default::default();
 
     let start: RecExpr<SLIALang> = "(Bool 0)".parse().unwrap();
 
@@ -82,8 +91,8 @@ fn build_egraph(examples: Spec) -> Runner<SLIALang, Spec> {
 
     let runner = Runner::default().with_expr(&start).run(&rules);
 
-    println!("{:#?}", runner);
-    runner
+    // println!("{:#?}", runner);
+    (graph, runner)
 }
 
 pub fn add(left: usize, right: usize) -> usize {
@@ -96,8 +105,8 @@ mod tests {
 
     #[test]
     fn run_build_egraph() {
-        let runner = build_egraph(Indeterminate);
-        let extractor = Extractor::new(&runner.egraph, EvalCostFn);
+        let (egraph, runner) = build_egraph(Indeterminate);
+        let extractor = Extractor::new(&runner.egraph, EvalCostFn::new(&egraph));
         let ((cost_a, cost_b, cost_c), best) = extractor.find_best(runner.roots[0]);
         println!(
             "Result: {} with cost: {} wrong, {} holes, {} size",
