@@ -1,6 +1,6 @@
 use crate::Spec;
 use crate::language::Expr;
-
+use std::cmp;
 
 
 
@@ -248,6 +248,183 @@ pub fn invert(spec : &Spec, symbol : &str) -> Spec {
                                 None
                             }
                             
+                        }, 
+                        _ => None
+
+                    }
+                
+                
+                } ).collect();
+                
+                unwrap_vec(temp)
+
+            },
+
+            "replace0" => { // wait ok I'm gonna impose the rediculous idea that if the code could have been created by append in either direction,
+                            // we will assume the incorrect function has been chosen. 
+                            // Also I would recommend we just state that if the previous string is a member of the new string it is also incorrect. 
+
+                let temp : Vec<Option<(Expr, Expr)>>  = a.iter().map(|(i , o)| {
+                    
+                    match (i,o) {
+                        
+                        (Expr::ConstStr(inn), Expr::ConstStr(out)) => {
+                            
+                            if let Some(_) = inn.find(out) {
+                                None   }
+                            else {
+                                Some((Expr::ConstStr(inn.clone()), Expr::ConstStr(inn.clone())))
+                            }
+                        }, 
+                        _ => None
+
+                    }
+                
+                
+                } ).collect();
+                
+                unwrap_vec(temp)
+
+            },
+
+            "replace1" => {
+
+                let temp : Vec<Option<(Expr, Expr)>>  = a.iter().map(|(i , o)| {
+                    
+                    match (i,o) {
+                        
+                        (Expr::ConstStr(inn), Expr::ConstStr(out)) => {
+
+                            if let Some(_) = inn.find(out){ // again we are assuming that if a replacement string has the original string in it, 
+                                                            // replace is the wrong function and is therefore impossible 
+                                None   }
+                            else {
+                                
+                            
+                            
+                            let ilen = inn.len() as i32;
+                            let olen = out.len() as i32;
+                            let mut inn2 = inn.chars();
+                            let mut out2 = out.chars();
+                            let minimum = cmp::min(ilen, olen) -1 ;
+                            let mut sindex = 0;
+                            let mut eindex = 0;
+                            
+
+                            for loc in 0 .. minimum { // finding start index of match
+                                
+                                if inn2.nth(loc as usize).unwrap().to_string() == out2.nth(loc as usize).unwrap().to_string() {
+                                    sindex = loc;
+                                } 
+
+                                if inn2.nth(loc as usize).unwrap().to_string() != out2.nth(loc as usize ).unwrap().to_string() {
+                                    
+                                }
+                                
+                            } 
+
+                            for loc in minimum .. 0 {
+
+                                if inn2.nth(loc as usize).unwrap().to_string() == out2.nth(loc as usize).unwrap().to_string() {
+
+                                    eindex = loc;
+                                }
+                                
+                                if inn2.nth(loc as usize).unwrap().to_string() != out2.nth(loc as usize).unwrap().to_string() {
+
+                                    break;
+                                }
+
+                            }
+
+                            let tempstring = inn2.skip(sindex as usize).take((eindex - sindex) as usize).collect::<String>(); //we are assuming that if we are replacing the enitre 
+                            // string we have the wrong function I should have done these cases in the opposite order
+
+                            if tempstring == *inn {
+
+                                None
+
+                            } else {
+
+                                Some((i.clone(), Expr::ConstStr(tempstring)))
+                            }
+
+                            }
+                        }, 
+                        _ => None
+
+                    }
+                
+                
+                } ).collect();
+                
+                unwrap_vec(temp)
+
+            },
+
+            "replace2" => {
+
+                let temp : Vec<Option<(Expr, Expr)>>  = a.iter().map(|(i , o)| {
+                    
+                    match (i,o) {
+                        
+                        (Expr::ConstStr(inn), Expr::ConstStr(out)) => {
+
+                            if let Some(_) = inn.find(out){ // again we are assuming that if a replacement string has the original string in it, 
+                                                            // replace is the wrong function and is therefore impossible 
+                                None   }
+                            else {
+                                
+                            
+                            
+                            let ilen = inn.len() as i32;
+                            let olen = out.len() as i32;
+                            let mut inn2 = inn.chars();
+                            let mut out2 = out.chars();
+                            let minimum = cmp::min(ilen, olen) -1 ;
+                            let mut sindex = 0;
+                            let mut eindex = 0;
+                            
+
+                            for loc in 0 .. minimum { // finding start index of match
+                                
+                                if inn2.nth(loc as usize).unwrap().to_string() == out2.nth(loc as usize).unwrap().to_string() {
+                                    sindex = loc;
+                                } 
+
+                                if inn2.nth(loc as usize).unwrap().to_string() != out2.nth(loc as usize ).unwrap().to_string() {
+                                    
+                                }
+                                
+                            } 
+
+                            for loc in minimum .. 0 {
+
+                                if inn2.nth(loc as usize).unwrap().to_string() == out2.nth(loc as usize).unwrap().to_string() {
+
+                                    eindex = loc;
+                                }
+                                
+                                if inn2.nth(loc as usize).unwrap().to_string() != out2.nth(loc as usize).unwrap().to_string() {
+
+                                    break;
+                                }
+
+                            }
+
+                            let tempstring = out2.skip(sindex as usize).take((olen - sindex -1) as usize).collect::<String>(); //we are assuming that if we are replacing the enitre 
+                            // string we have the wrong function I should have done these cases in the opposite order
+
+                            if tempstring == *inn {
+
+                                None
+
+                            } else {
+
+                                Some((i.clone(), Expr::ConstStr(tempstring)))
+                            }
+
+                            }
                         }, 
                         _ => None
 
