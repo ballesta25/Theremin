@@ -2,50 +2,33 @@ pub use crate::language::{Eval, Expr, Func, RegFun, RegLang, Term, Translate};
 use regex::Regex;
 use std::collections::HashMap;
 
-impl Eval for Term {
-    fn eval(self, env: &HashMap<String, Term>) -> Term {
+impl Eval for Expr {
+    fn eval(self, env: &HashMap<String, Expr>) -> Term {
         match self {
-            Ok(s) => match s {
-                Expr::ConstStr(_) | Expr::ConstInt(_) | Expr::ConstBool(_) => Ok(s.clone()),
-                Expr::Var(x) => {
-                    let j = env.get(&x);
-                    match j {
-                        Some(i) => i.clone(),
-                        None => Err(String::from("Uninstantiated Variable")),
-                    }
+            Expr::ConstStr(_) | Expr::ConstInt(_) | Expr::ConstBool(_) => Ok(self),
+            Expr::Var(x) => {
+                let j = env.get(&x);
+                match j {
+                    Some(i) => Ok(i.clone()),
+                    None => Err(String::from("Uninstantiated Variable")),
                 }
-                Expr::Call(p) => p.eval(env),
-
-                Expr::If(c, t, e) => {
-                    let condition = Ok(*c);
-                    let then = Ok(*t);
-                    let els = Ok(*e);
-
-                    let cond = condition.eval(env);
-                    let th = then.eval(env);
-                    let el = els.eval(env);
-
-                    match (cond, th, el) {
-                        (Ok(Expr::ConstBool(j)), Ok(p), Ok(q)) => match j {
-                            true => Ok(p),
-                            _ => Ok(q),
-                        },
-                        _ => Err(String::from("If condition doesn't resolve to Boolean")),
-                    }
-                }
+            }
+            Expr::Call(p) => p.eval(env),
+            Expr::If(c, t, e) => match c.eval(env)? {
+                Expr::ConstBool(true) => t.eval(env),
+                Expr::ConstBool(false) => e.eval(env),
+                _ => Err(String::from("If condition doesn't resolve to Boolean")),
             },
-
-            Err(j) => panic!("Error:{}", j),
         }
     }
 }
 
 impl Eval for Func {
-    fn eval(self, env: &HashMap<String, Term>) -> Term {
+    fn eval(self, env: &HashMap<String, Expr>) -> Term {
         match self {
             Self::Append(arg1, arg2) => {
-                let arg1_evaled = Ok(arg1).eval(env)?;
-                let arg2_evaled = Ok(arg2).eval(env)?;
+                let arg1_evaled = arg1.eval(env)?;
+                let arg2_evaled = arg2.eval(env)?;
 
                 match (&arg1_evaled, &arg2_evaled) {
                     (Expr::ConstStr(a1), Expr::ConstStr(a2)) => {
@@ -59,8 +42,8 @@ impl Eval for Func {
             }
 
             Self::Leq(arg1, arg2) => {
-                let arg1_evaled = Ok(arg1).eval(env)?;
-                let arg2_evaled = Ok(arg2).eval(env)?;
+                let arg1_evaled = arg1.eval(env)?;
+                let arg2_evaled = arg2.eval(env)?;
 
                 match (&arg1_evaled, &arg2_evaled) {
                     (Expr::ConstInt(a1), Expr::ConstInt(a2)) => Ok(Expr::ConstBool(a1 <= a2)),
@@ -72,8 +55,8 @@ impl Eval for Func {
             }
 
             Self::Geq(arg1, arg2) => {
-                let arg1_evaled = Ok(arg1).eval(env)?;
-                let arg2_evaled = Ok(arg2).eval(env)?;
+                let arg1_evaled = arg1.eval(env)?;
+                let arg2_evaled = arg2.eval(env)?;
 
                 match (&arg1_evaled, &arg2_evaled) {
                     (Expr::ConstInt(a1), Expr::ConstInt(a2)) => Ok(Expr::ConstBool(a1 >= a2)),
@@ -85,8 +68,8 @@ impl Eval for Func {
             }
 
             Self::Eql(arg1, arg2) => {
-                let arg1_evaled = Ok(arg1).eval(env)?;
-                let arg2_evaled = Ok(arg2).eval(env)?;
+                let arg1_evaled = arg1.eval(env)?;
+                let arg2_evaled = arg2.eval(env)?;
 
                 match (&arg1_evaled, &arg2_evaled) {
                     (Expr::ConstInt(a1), Expr::ConstInt(a2)) => Ok(Expr::ConstBool(a1 == a2)),
@@ -98,8 +81,8 @@ impl Eval for Func {
             }
 
             Self::Add(arg1, arg2) => {
-                let arg1_evaled = Ok(arg1).eval(env)?;
-                let arg2_evaled = Ok(arg2).eval(env)?;
+                let arg1_evaled = arg1.eval(env)?;
+                let arg2_evaled = arg2.eval(env)?;
 
                 match (&arg1_evaled, &arg2_evaled) {
                     (Expr::ConstInt(a1), Expr::ConstInt(a2)) => Ok(Expr::ConstInt(a1 + a2)),
@@ -111,8 +94,8 @@ impl Eval for Func {
             }
 
             Self::Min(arg1, arg2) => {
-                let arg1_evaled = Ok(arg1).eval(env)?;
-                let arg2_evaled = Ok(arg2).eval(env)?;
+                let arg1_evaled = arg1.eval(env)?;
+                let arg2_evaled = arg2.eval(env)?;
 
                 match (&arg1_evaled, &arg2_evaled) {
                     (Expr::ConstInt(a1), Expr::ConstInt(a2)) => Ok(Expr::ConstInt(a1 - a2)),
@@ -124,8 +107,8 @@ impl Eval for Func {
             }
 
             Self::Mult(arg1, arg2) => {
-                let arg1_evaled = Ok(arg1).eval(env)?;
-                let arg2_evaled = Ok(arg2).eval(env)?;
+                let arg1_evaled = arg1.eval(env)?;
+                let arg2_evaled = arg2.eval(env)?;
 
                 match (&arg1_evaled, &arg2_evaled) {
                     (Expr::ConstInt(a1), Expr::ConstInt(a2)) => Ok(Expr::ConstInt(a1 * a2)),
@@ -137,8 +120,8 @@ impl Eval for Func {
             }
 
             Self::Div(arg1, arg2) => {
-                let arg1_evaled = Ok(arg1).eval(env)?;
-                let arg2_evaled = Ok(arg2).eval(env)?;
+                let arg1_evaled = arg1.eval(env)?;
+                let arg2_evaled = arg2.eval(env)?;
 
                 match (&arg1_evaled, &arg2_evaled) {
                     (Expr::ConstInt(a1), Expr::ConstInt(a2)) => Ok(Expr::ConstInt(a1 / a2)),
@@ -150,7 +133,7 @@ impl Eval for Func {
             }
 
             Self::Abs(arg1) => {
-                let arg1_evaled = Ok(arg1).eval(env)?;
+                let arg1_evaled = arg1.eval(env)?;
 
                 match &arg1_evaled {
                     Expr::ConstInt(a1) => Ok(Expr::ConstInt(a1.abs())),
@@ -159,8 +142,8 @@ impl Eval for Func {
             }
 
             Self::Mod(arg1, arg2) => {
-                let arg1_evaled = Ok(arg1).eval(env)?;
-                let arg2_evaled = Ok(arg2).eval(env)?;
+                let arg1_evaled = arg1.eval(env)?;
+                let arg2_evaled = arg2.eval(env)?;
 
                 match (&arg1_evaled, &arg2_evaled) {
                     (Expr::ConstInt(a1), Expr::ConstInt(a2)) => Ok(Expr::ConstInt(a1 % a2)),
@@ -172,7 +155,7 @@ impl Eval for Func {
             }
 
             Self::NegI(arg1) => {
-                let arg1_evaled = Ok(arg1).eval(env)?;
+                let arg1_evaled = arg1.eval(env)?;
 
                 match &arg1_evaled {
                     Expr::ConstInt(a1) => Ok(Expr::ConstInt(a1 * (-1))),
@@ -181,7 +164,7 @@ impl Eval for Func {
             }
 
             Self::NegB(arg1) => {
-                let arg1_evaled = Ok(arg1).eval(env)?;
+                let arg1_evaled = arg1.eval(env)?;
 
                 match &arg1_evaled {
                     Expr::ConstBool(a1) => Ok(Expr::ConstBool(!a1)),
@@ -190,8 +173,8 @@ impl Eval for Func {
             }
 
             Self::And(arg1, arg2) => {
-                let arg1_evaled = Ok(arg1).eval(env)?;
-                let arg2_evaled = Ok(arg2).eval(env)?;
+                let arg1_evaled = arg1.eval(env)?;
+                let arg2_evaled = arg2.eval(env)?;
 
                 match (&arg1_evaled, &arg2_evaled) {
                     (Expr::ConstBool(a1), Expr::ConstBool(a2)) => Ok(Expr::ConstBool(*a1 && *a2)),
@@ -203,8 +186,8 @@ impl Eval for Func {
             }
 
             Self::Or(arg1, arg2) => {
-                let arg1_evaled = Ok(arg1).eval(env)?;
-                let arg2_evaled = Ok(arg2).eval(env)?;
+                let arg1_evaled = arg1.eval(env)?;
+                let arg2_evaled = arg2.eval(env)?;
 
                 match (&arg1_evaled, &arg2_evaled) {
                     (Expr::ConstBool(a1), Expr::ConstBool(a2)) => Ok(Expr::ConstBool(*a1 || *a2)),
@@ -216,7 +199,7 @@ impl Eval for Func {
             }
 
             Self::StrLen(arg1) => {
-                let arg1_evaled = Ok(arg1).eval(env)?;
+                let arg1_evaled = arg1.eval(env)?;
 
                 match &arg1_evaled {
                     Expr::ConstStr(a1) => Ok(Expr::ConstInt(a1.len() as i32)),
@@ -228,8 +211,8 @@ impl Eval for Func {
             }
 
             Self::StrAt(arg1, arg2) => {
-                let arg1_evaled = Ok(arg1).eval(env)?;
-                let arg2_evaled = Ok(arg2).eval(env)?;
+                let arg1_evaled = arg1.eval(env)?;
+                let arg2_evaled = arg2.eval(env)?;
 
                 match (&arg1_evaled, &arg2_evaled) {
                     (Expr::ConstStr(a1), Expr::ConstInt(a2)) => {
@@ -247,18 +230,16 @@ impl Eval for Func {
             }
 
             Self::SubStr(arg1, arg2, arg3) => {
-                let arg1_evaled = Ok(arg1).eval(env)?;
-                let arg2_evaled = Ok(arg2).eval(env)?;
-                let arg3_evaled = Ok(arg3).eval(env)?;
+                let arg1_evaled = arg1.eval(env)?;
+                let arg2_evaled = arg2.eval(env)?;
+                let arg3_evaled = arg3.eval(env)?;
 
                 match (&arg1_evaled, &arg2_evaled, &arg3_evaled) {
                     (Expr::ConstStr(a1), Expr::ConstInt(a2), Expr::ConstInt(a3)) => {
                         if (a3 > &0) && (a2 < &(a1.len() as i32)) && (a2 >= &0) {
                             // if either the number to take is 0 or less or the index is out of bounds return mt string
-
                             if (a2 + a3 - 1) < (a1.len() as i32) {
                                 // if index plus number to take is greater than length of string decide on number to take
-
                                 Ok(Expr::ConstStr(
                                     a1.chars()
                                         .skip(*a2 as usize)
@@ -286,8 +267,8 @@ impl Eval for Func {
             }
 
             Self::IsPre(arg1, arg2) => {
-                let arg1_evaled = Ok(arg1).eval(env)?;
-                let arg2_evaled = Ok(arg2).eval(env)?;
+                let arg1_evaled = arg1.eval(env)?;
+                let arg2_evaled = arg2.eval(env)?;
 
                 match (&arg1_evaled, &arg2_evaled) {
                     (Expr::ConstStr(a1), Expr::ConstStr(a2)) => {
@@ -295,8 +276,7 @@ impl Eval for Func {
                         let l2 = a2.len();
 
                         if l1 <= l2 {
-                            let p = a2.chars().take(l1).collect::<String>();
-
+                            let p: String = a2.chars().take(l1).collect();
                             Ok(Expr::ConstBool(p == *a1))
                         } else {
                             Ok(Expr::ConstBool(false))
@@ -310,8 +290,8 @@ impl Eval for Func {
             }
 
             Self::IsPost(arg1, arg2) => {
-                let arg1_evaled = Ok(arg1).eval(env)?;
-                let arg2_evaled = Ok(arg2).eval(env)?;
+                let arg1_evaled = arg1.eval(env)?;
+                let arg2_evaled = arg2.eval(env)?;
 
                 match (&arg1_evaled, &arg2_evaled) {
                     (Expr::ConstStr(a1), Expr::ConstStr(a2)) => {
@@ -339,8 +319,8 @@ impl Eval for Func {
             }
 
             Self::Contains(arg1, arg2) => {
-                let arg1_evaled = Ok(arg1).eval(env)?;
-                let arg2_evaled = Ok(arg2).eval(env)?;
+                let arg1_evaled = arg1.eval(env)?;
+                let arg2_evaled = arg2.eval(env)?;
 
                 match (&arg1_evaled, &arg2_evaled) {
                     (Expr::ConstStr(a1), Expr::ConstStr(a2)) => {
@@ -354,9 +334,9 @@ impl Eval for Func {
             }
 
             Self::Index(arg1, arg2, arg3) => {
-                let arg1_evaled = Ok(arg1).eval(env)?;
-                let arg2_evaled = Ok(arg2).eval(env)?;
-                let arg3_evaled = Ok(arg3).eval(env)?;
+                let arg1_evaled = arg1.eval(env)?;
+                let arg2_evaled = arg2.eval(env)?;
+                let arg3_evaled = arg3.eval(env)?;
 
                 match (&arg1_evaled, &arg2_evaled, &arg3_evaled) {
                     (Expr::ConstStr(a1), Expr::ConstStr(a2), Expr::ConstInt(a3)) => {
@@ -395,9 +375,9 @@ impl Eval for Func {
             }
 
             Self::Replace(arg1, arg2, arg3) => {
-                let arg1_evaled = Ok(arg1.clone()).eval(env)?;
-                let arg2_evaled = Ok(arg2.clone()).eval(env)?;
-                let arg3_evaled = Ok(arg3.clone()).eval(env)?;
+                let arg1_evaled = arg1.clone().eval(env)?;
+                let arg2_evaled = arg2.clone().eval(env)?;
+                let arg3_evaled = arg3.clone().eval(env)?;
 
                 match (&arg1_evaled, &arg2_evaled, &arg3_evaled) {
                     (Expr::ConstStr(a1), Expr::ConstStr(a2), Expr::ConstStr(a3)) => {
@@ -416,84 +396,62 @@ impl Eval for Func {
             }
 
             Self::ReplaceAll(arg1, arg2, arg3) => {
-                let arg1_evaled = Ok(arg1.clone()).eval(env)?;
-                let arg2_evaled = Ok(arg2.clone()).eval(env)?;
-                let arg3_evaled = Ok(arg3.clone()).eval(env)?;
+                let arg1_evaled = arg1.clone().eval(env)?;
+                let arg2_evaled = arg2.clone().eval(env)?;
+                let arg3_evaled = arg3.clone().eval(env)?;
 
                 match (&arg1_evaled, &arg2_evaled, &arg3_evaled) {
                     (Expr::ConstStr(a1), Expr::ConstStr(a2), Expr::ConstStr(a3)) => {
                         let l1 = a2.len() as i32;
                         if l1 == 0 {
-                            Func::Append(arg3.clone(), arg1.clone()).eval(env).clone()
+                            Func::Append(arg3.clone(), arg1.clone()).eval(env)
                         } else {
                             Ok(Expr::ConstStr(a1.replace(a2, a3)))
                         }
                     }
-                    _ => {
-                        let j = format!(
-                            "ReplaceAll: invalid argument: arg1 = {:?} arg2 = {:?}, arg3 = {:?}",
-                            arg1_evaled, arg2_evaled, arg3_evaled
-                        );
-
-                        Err(j)
-                    }
+                    _ => Err(format!(
+                        "ReplaceAll: invalid argument: arg1 = {:?} arg2 = {:?}, arg3 = {:?}",
+                        arg1_evaled, arg2_evaled, arg3_evaled
+                    )),
                 }
             }
 
             Self::LexEq(arg1, arg2) => {
-                let arg1_evaled = Ok(arg1).eval(env);
-                let arg2_evaled = Ok(arg2).eval(env);
+                let arg1_evaled = arg1.eval(env)?;
+                let arg2_evaled = arg2.eval(env)?;
 
                 match (&arg1_evaled, &arg2_evaled) {
-                    (Ok(Expr::ConstStr(a1)), Ok(Expr::ConstStr(a2))) => {
-                        Ok(Expr::ConstBool(a1 == a2))
-                    }
-                    _ => {
-                        let j = format!(
-                            "LexEq: invalid argument: arg1 = {:?} arg2 = {:?}",
-                            arg1_evaled, arg2_evaled
-                        );
-
-                        Err(j)
-                    }
+                    (Expr::ConstStr(a1), Expr::ConstStr(a2)) => Ok(Expr::ConstBool(a1 == a2)),
+                    _ => Err(format!(
+                        "LexEq: invalid argument: arg1 = {:?} arg2 = {:?}",
+                        arg1_evaled, arg2_evaled
+                    )),
                 }
             }
 
             Self::LexLeq(arg1, arg2) => {
-                let arg1_evaled = Ok(arg1).eval(env);
-                let arg2_evaled = Ok(arg2).eval(env);
+                let arg1_evaled = arg1.eval(env)?;
+                let arg2_evaled = arg2.eval(env)?;
 
                 match (&arg1_evaled, &arg2_evaled) {
-                    (Ok(Expr::ConstStr(a1)), Ok(Expr::ConstStr(a2))) => {
-                        Ok(Expr::ConstBool(a1 <= a2))
-                    }
-                    _ => {
-                        let j = format!(
-                            "LexLeq: invalid argument: arg1 = {:?} arg2 = {:?}",
-                            arg1_evaled, arg2_evaled
-                        );
-
-                        Err(j)
-                    }
+                    (Expr::ConstStr(a1), Expr::ConstStr(a2)) => Ok(Expr::ConstBool(a1 <= a2)),
+                    _ => Err(format!(
+                        "LexLeq: invalid argument: arg1 = {:?} arg2 = {:?}",
+                        arg1_evaled, arg2_evaled
+                    )),
                 }
             }
 
             Self::LexGeq(arg1, arg2) => {
-                let arg1_evaled = Ok(arg1).eval(env);
-                let arg2_evaled = Ok(arg2).eval(env);
+                let arg1_evaled = arg1.eval(env)?;
+                let arg2_evaled = arg2.eval(env)?;
 
                 match (&arg1_evaled, &arg2_evaled) {
-                    (Ok(Expr::ConstStr(a1)), Ok(Expr::ConstStr(a2))) => {
-                        Ok(Expr::ConstBool(a1 >= a2))
-                    }
-                    _ => {
-                        let j = format!(
-                            "LexGeq: invalid argument: arg1 = {:?} arg2 = {:?}",
-                            arg1_evaled, arg2_evaled
-                        );
-
-                        Err(j)
-                    }
+                    (Expr::ConstStr(a1), Expr::ConstStr(a2)) => Ok(Expr::ConstBool(a1 >= a2)),
+                    _ => Err(format!(
+                        "LexGeq: invalid argument: arg1 = {:?} arg2 = {:?}",
+                        arg1_evaled, arg2_evaled
+                    )),
                 }
             }
         }
@@ -555,7 +513,7 @@ impl Translate for RegFun {
 
             RegFun::FromStr(arg1) => {
                 let j = HashMap::new();
-                let eval1 = Ok(arg1.clone()).eval(&j).clone();
+                let eval1 = arg1.clone().eval(&j).clone();
 
                 match eval1 {
                     Ok(Expr::ConstStr(a)) => Regex::new(&format!("{}", a)).unwrap(),
@@ -565,8 +523,8 @@ impl Translate for RegFun {
 
             RegFun::Range(arg1, arg2) => {
                 let j = HashMap::new();
-                let eval1 = Ok(arg1.clone()).eval(&j);
-                let eval2 = Ok(arg2.clone()).eval(&j);
+                let eval1 = arg1.clone().eval(&j);
+                let eval2 = arg2.clone().eval(&j);
 
                 match (eval1, eval2) {
                     (Ok(Expr::ConstStr(a)), Ok(Expr::ConstStr(_))) => {
