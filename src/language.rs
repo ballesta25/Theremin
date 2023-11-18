@@ -70,7 +70,7 @@ pub enum Expr {
 }
 
 pub trait Eval {
-    fn eval(self, env: &HashMap<String, Term>) -> Term;
+    fn eval(self, env: &HashMap<String, Expr>) -> Term;
 }
 
 impl Expr {
