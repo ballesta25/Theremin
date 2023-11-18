@@ -52,15 +52,15 @@ impl<'a> EvalCostFn<'a> {
 }
 
 impl<'a> CostFunction<SLIALang> for EvalCostFn<'a> {
-    // (wrong_count, num_holes, size)
-    type Cost = (usize, usize, usize);
+    // (num_holes, size)
+    type Cost = (usize, usize);
     fn cost<C>(&mut self, enode: &SLIALang, mut costs: C) -> Self::Cost
     where
         C: FnMut(Id) -> Self::Cost,
     {
-        let (mut wrong, mut holes, size) = enode.fold((0, 0, 1), |(a, b, c), id| {
-            let (a1, b1, c1) = costs(id);
-            (a + a1, b + b1, c + c1)
+        let (mut holes, size) = enode.fold((0, 1), |(a, b), id| {
+            let (a1, b1) = costs(id);
+            (a + a1, b + b1)
         });
 
         //check if enode *is* a hole
@@ -72,7 +72,7 @@ impl<'a> CostFunction<SLIALang> for EvalCostFn<'a> {
             holes += 1;
         }
         // eval to check for wrong examples
-        (wrong, holes, size)
+        (holes, size)
     }
 }
 
@@ -114,10 +114,10 @@ mod tests {
         let mut fills = HashMap::new();
         let cost_function = EvalCostFn::new(&egraph, &mut fills);
         let extractor = Extractor::new(&runner.egraph, cost_function);
-        let ((cost_a, cost_b, cost_c), best) = extractor.find_best(runner.roots[0]);
+        let ((cost_a, cost_b), best) = extractor.find_best(runner.roots[0]);
         println!(
-            "Result: {} with cost: {} wrong, {} holes, {} size",
-            best, cost_a, cost_b, cost_c
+            "Result: {} with cost: {} holes, {} size",
+            best, cost_a, cost_b,
         );
     }
 
