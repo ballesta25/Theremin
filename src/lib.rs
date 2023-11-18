@@ -64,12 +64,9 @@ impl<'a> CostFunction<SLIALang> for EvalCostFn<'a> {
         });
 
         //check if enode *is* a hole
-        let mut dummy_vec = Vec::<Id>::new();
-        dummy_vec.push(0.into());
-        dummy_vec.push(0.into());
-        let matches_hole = SymbolLang::new("hole", dummy_vec);
-        if enode.matches(&matches_hole) {
-            holes += 1;
+        match enode.op.as_str() {
+            "hole" => holes += 1,
+            _ => (),
         }
         // eval to check for wrong examples
         (holes, size)
@@ -90,7 +87,7 @@ static grammar_rules: Lazy<[Rewrite<SLIALang, Spec>; 6]> = Lazy::new(|| {
 fn build_egraph(examples: Spec) -> (EGraph<SLIALang, Spec>, Runner<SLIALang, Spec>) {
     let graph: EGraph<SLIALang, Spec> = Default::default();
 
-    let start: RecExpr<SLIALang> = "(Bool 0)".parse().unwrap();
+    let start: RecExpr<SLIALang> = "(Bool root_spec)".parse().unwrap();
 
     let rules = grammar_rules.clone();
 
