@@ -454,6 +454,25 @@ impl Eval for Func {
                     )),
                 }
             }
+
+            Self::IntToStr(arg1) => {
+                let arg1 = arg1.eval(env)?;
+                match arg1 {
+                    Expr::ConstInt(n) => Ok(Expr::ConstStr(n.to_string())),
+                    _ => Err(format!("IntToStr: invalid argument: arg1 = {:?}", arg1)),
+                }
+            }
+
+            Self::StrToInt(arg1) => {
+                let arg1 = arg1.eval(env)?;
+                match arg1 {
+                    Expr::ConstStr(s) => {
+                        let n = s.parse::<u32>();
+                        Ok(Expr::ConstInt(n.map_or(-1, |n| n.into())))
+                    }
+                    _ => Err(format!("StrToInt: invalid argument: arg1 = {:?}", arg1)),
+                }
+            }
         }
     }
 }
