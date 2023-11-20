@@ -62,7 +62,7 @@ pub trait Translate {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Expr {
     ConstStr(String),
-    ConstInt(i32),
+    ConstInt(i64),
     ConstBool(bool),
     Var(String),
     Call(Box<Func>),

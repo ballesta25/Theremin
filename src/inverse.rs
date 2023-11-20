@@ -49,7 +49,7 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                         .map(|(i, o)| match (i, o) {
                             (Expr::ConstStr(inn), Expr::ConstStr(out)) => {
                                 if let Some(k) = inn.find(out) {
-                                    Some((i.clone(), Expr::ConstInt(k as i32)))
+                                    Some((i.clone(), Expr::ConstInt(k as i64)))
                                 } else {
                                     None
                                 }
@@ -67,7 +67,7 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                         .map(|(i, o)| match (i, o) {
                             (Expr::ConstStr(inn), Expr::ConstStr(out)) => {
                                 if let Some(k) = inn.find(out) {
-                                    Some((i.clone(), Expr::ConstInt((k + out.len()) as i32)))
+                                    Some((i.clone(), Expr::ConstInt((k + out.len()) as i64)))
                                 } else {
                                     None
                                 }
@@ -171,7 +171,7 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                         .map(|(i, o)| {
                             match (i, o) {
                                 (Expr::ConstStr(inn), Expr::ConstInt(out)) => {
-                                    if *out == inn.len() as i32 {
+                                    if *out == inn.len() as i64 {
                                         // just make sure the length actually matches
                                         Some((
                                             Expr::ConstStr(inn.clone()),
