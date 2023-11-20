@@ -202,7 +202,7 @@ impl Eval for Func {
                 let arg1_evaled = arg1.eval(env)?;
 
                 match &arg1_evaled {
-                    Expr::ConstStr(a1) => Ok(Expr::ConstInt(a1.len() as i32)),
+                    Expr::ConstStr(a1) => Ok(Expr::ConstInt(a1.len() as i64)),
                     _ => Err(format!(
                         "StrLen: invalid argument: arg1 = {:?}",
                         arg1_evaled
@@ -216,7 +216,7 @@ impl Eval for Func {
 
                 match (&arg1_evaled, &arg2_evaled) {
                     (Expr::ConstStr(a1), Expr::ConstInt(a2)) => {
-                        Ok(Expr::ConstStr(if a2 < &(a1.len() as i32) {
+                        Ok(Expr::ConstStr(if a2 < &(a1.len() as i64) {
                             a1.chars().nth(*a2 as usize).unwrap().to_string()
                         } else {
                             "".to_string()
@@ -236,9 +236,9 @@ impl Eval for Func {
 
                 match (&arg1_evaled, &arg2_evaled, &arg3_evaled) {
                     (Expr::ConstStr(a1), Expr::ConstInt(a2), Expr::ConstInt(a3)) => {
-                        if (a3 > &0) && (a2 < &(a1.len() as i32)) && (a2 >= &0) {
+                        if (a3 > &0) && (a2 < &(a1.len() as i64)) && (a2 >= &0) {
                             // if either the number to take is 0 or less or the index is out of bounds return mt string
-                            if (a2 + a3 - 1) < (a1.len() as i32) {
+                            if (a2 + a3 - 1) < (a1.len() as i64) {
                                 // if index plus number to take is greater than length of string decide on number to take
                                 Ok(Expr::ConstStr(
                                     a1.chars()
@@ -247,7 +247,7 @@ impl Eval for Func {
                                         .collect::<String>(),
                                 ))
                             } else {
-                                let j = &(a1.len() as i32) - a2;
+                                let j = &(a1.len() as i64) - a2;
                                 Ok(Expr::ConstStr(
                                     a1.chars()
                                         .skip(*a2 as usize)
@@ -295,8 +295,8 @@ impl Eval for Func {
 
                 match (&arg1_evaled, &arg2_evaled) {
                     (Expr::ConstStr(a1), Expr::ConstStr(a2)) => {
-                        let l1 = a1.len() as i32;
-                        let l2 = a2.len() as i32;
+                        let l1 = a1.len() as i64;
+                        let l2 = a2.len() as i64;
 
                         if l1 <= l2 {
                             let m = l2 - l1 - 1;
@@ -340,8 +340,8 @@ impl Eval for Func {
 
                 match (&arg1_evaled, &arg2_evaled, &arg3_evaled) {
                     (Expr::ConstStr(a1), Expr::ConstStr(a2), Expr::ConstInt(a3)) => {
-                        let l1 = a1.len() as i32;
-                        let l2 = a2.len() as i32;
+                        let l1 = a1.len() as i64;
+                        let l2 = a2.len() as i64;
 
                         if a3 < &l1 {
                             if l2 == 0 {
@@ -354,7 +354,7 @@ impl Eval for Func {
                                     .collect::<String>();
 
                                 if let Some(k) = b1.find(a2) {
-                                    Ok(Expr::ConstInt(k as i32))
+                                    Ok(Expr::ConstInt(k as i64))
                                 } else {
                                     Ok(Expr::ConstInt(-1))
                                 }
@@ -402,7 +402,7 @@ impl Eval for Func {
 
                 match (&arg1_evaled, &arg2_evaled, &arg3_evaled) {
                     (Expr::ConstStr(a1), Expr::ConstStr(a2), Expr::ConstStr(a3)) => {
-                        let l1 = a2.len() as i32;
+                        let l1 = a2.len() as i64;
                         if l1 == 0 {
                             Func::Append(arg3.clone(), arg1.clone()).eval(env)
                         } else {

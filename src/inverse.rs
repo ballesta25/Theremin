@@ -91,7 +91,7 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                                         let ilen = &inn.len();
                                         let olen = &out.len();
 
-                                        if k as i32 == 0 && (j == 0 || j == 1) {
+                                        if k as i64 == 0 && (j == 0 || j == 1) {
                                             j = 1; //this example uses prepend instead of append and no prior examples used append
 
                                             Some((i.clone(), i.clone()))
@@ -134,7 +134,7 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                                         let ilen = &inn.len();
                                         let olen = &out.len();
 
-                                        if k as i32 == 0 && (j == 0 || j == 1) {
+                                        if k as i64 == 0 && (j == 0 || j == 1) {
                                             j = 1; //this example uses prepend instead of append and no prior examples used append
 
                                             Some((
@@ -222,8 +222,8 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                                         // replace is the wrong function and is therefore impossible
                                         None
                                     } else {
-                                        let ilen = inn.len() as i32;
-                                        let olen = out.len() as i32;
+                                        let ilen = inn.len() as i64;
+                                        let olen = out.len() as i64;
                                         let mut inn2 = inn.chars();
                                         let mut out2 = out.chars();
                                         let minimum = cmp::min(ilen, olen) - 1;
@@ -292,8 +292,8 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                                         // replace is the wrong function and is therefore impossible
                                         None
                                     } else {
-                                        let ilen = inn.len() as i32;
-                                        let olen = out.len() as i32;
+                                        let ilen = inn.len() as i64;
+                                        let olen = out.len() as i64;
                                         let mut inn2 = inn.chars();
                                         let mut out2 = out.chars();
                                         let minimum = cmp::min(ilen, olen) - 1;
