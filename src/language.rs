@@ -33,6 +33,9 @@ pub enum Func {
     LexEq(Expr, Expr),
     LexLeq(Expr, Expr),
     LexGeq(Expr, Expr),
+
+    StrToInt(Expr),
+    IntToStr(Expr),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
