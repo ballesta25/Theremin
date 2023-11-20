@@ -8,12 +8,12 @@ use substring::Substring;
 #[grammar = "sygus.pest"]
 pub struct SygusParser;
 
-/// Translated from *The SyGuS Language Standard Version 2.1*,
-/// section 3 Semantics of Commands.
-/// A synthesis conjecture is represented by a closed formula:
-///
-///     ∃ f_1, ..., f_n . ∀ v_1, ..., v_m . (α_1 ∧ ... ∧ α_r) =⇒ (φ_1 ∧ ... ∧ φ_q)
-///
+// Translated from *The SyGuS Language Standard Version 2.1*,
+// section 3 Semantics of Commands.
+// A synthesis conjecture is represented by a closed formula:
+//
+//     ∃ f_1, ..., f_n . ∀ v_1, ..., v_m . (α_1 ∧ ... ∧ α_r) =⇒ (φ_1 ∧ ... ∧ φ_q)
+//
 #[derive(Debug)]
 pub struct Conjecture {
     /// A list of functions f_1,...,f_n to synthesize
