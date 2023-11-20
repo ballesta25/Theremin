@@ -75,11 +75,11 @@ impl<'a> CostFunction<SLIALang> for EvalCostFn<'a> {
 
 static grammar_rules: Lazy<[Rewrite<SLIALang, Spec>; 6]> = Lazy::new(|| {
     [
-        rw!("eq"; "(Bool ?s)" => "(= (Int (inv (eq0 ?s))) (Int (inv (eq1 ?s))))"),
-        rw!("gt"; "(Bool ?s)" => "(> (Int (inv (gt0 ?s))) (Int (inv (gt1 ?s))))"),
-        rw!("ge"; "(Bool ?s)" => "(>= (Int (inv (ge0 ?s))) (Int (inv (ge1 ?s))))"),
-        rw!("lt"; "(Bool ?s)" => "(< (Int (inv (lt0 ?s))) (Int (inv (lt1 ?s))))"),
-        rw!("le"; "(Bool ?s)" => "(<= (Int (inv (le0 ?s))) (Int (inv (le1 ?s))))"),
+        rw!("eq"; "(Bool ?s)" => "(= (Int (inv eq0 ?s)) (Int (inv eq1 ?s)))"),
+        rw!("gt"; "(Bool ?s)" => "(> (Int (inv gt0 ?s)) (Int (inv gt1 ?s)))"),
+        rw!("ge"; "(Bool ?s)" => "(>= (Int (inv ge0 ?s)) (Int (inv ge1 ?s)))"),
+        rw!("lt"; "(Bool ?s)" => "(< (Int (inv lt0 ?s)) (Int (inv lt1 ?s)))"),
+        rw!("le"; "(Bool ?s)" => "(<= (Int (inv le0 ?s)) (Int (inv le1 ?s)))"),
         rw!("int_hole"; "(Int ?s)" => "(hole Int ?s)"),
     ]
 });
