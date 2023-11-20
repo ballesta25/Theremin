@@ -360,11 +360,7 @@ impl Eval for Func {
                                 }
                             }
                         } else {
-                            let j = format!(
-                                "Index: arg3 out of bounds: arg1 = {:?}, arg3 = {:?}",
-                                arg1_evaled, arg3_evaled
-                            );
-                            Err(j)
+                            Ok(Expr::ConstInt(-1))
                         }
                     }
                     _ => Err(format!(

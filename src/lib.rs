@@ -92,6 +92,7 @@ pub fn grammar_rules() -> Vec<Rewrite<SLIALang, Spec>> {
         rw!("ge"; "(Bool ?s)" => "(>= (Int (inv ge0 ?s)) (Int (inv ge1 ?s)))"),
         rw!("lt"; "(Bool ?s)" => "(< (Int (inv lt0 ?s)) (Int (inv lt1 ?s)))"),
         rw!("le"; "(Bool ?s)" => "(<= (Int (inv le0 ?s)) (Int (inv le1 ?s)))"),
+        //rw!("substr"; "(String ?s)" => ""),
     ]
 }
 
