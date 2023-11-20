@@ -31,8 +31,15 @@ impl Analysis<SLIALang> for Spec {
     }
 
     fn make(egraph: &EGraph<SLIALang, Self>, enode: &SLIALang) -> Self::Data {
-        match enode {
+        match enode.op.as_str() {
             // inverse semantics here
+            "inv" => {
+                inverse::invert(
+                    /*spec*/ &egraph[enode.children[1]].data,
+                    egraph[enode.children[0]].nodes[0].op.as_str(), /*tag */
+                )
+            }
+
             _ => Indeterminate,
         }
     }
@@ -97,7 +104,7 @@ fn build_egraph(examples: Spec) -> (EGraph<SLIALang, Spec>, Runner<SLIALang, Spe
 
     let runner = Runner::default().with_expr(&start).run(&rules);
 
-    // println!("{:#?}", runner);
+    println!("{:#?}", runner);
     (graph, runner)
 }
 
