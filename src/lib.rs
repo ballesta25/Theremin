@@ -10,7 +10,7 @@ use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
 pub type SLIALang = SymbolLang;
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub enum Spec {
     Examples(Vec<(Expr, Expr)>),
     Impossible,
@@ -88,12 +88,40 @@ impl<'a> CostFunction<SLIALang> for EvalCostFn<'a> {
 
 pub fn grammar_rules() -> Vec<Rewrite<SLIALang, Spec>> {
     vec![
-        rw!("eq"; "(Bool ?s)" => "(= (Int (inv eq0 ?s)) (Int (inv eq1 ?s)))"),
-        rw!("gt"; "(Bool ?s)" => "(> (Int (inv gt0 ?s)) (Int (inv gt1 ?s)))"),
-        rw!("ge"; "(Bool ?s)" => "(>= (Int (inv ge0 ?s)) (Int (inv ge1 ?s)))"),
-        rw!("lt"; "(Bool ?s)" => "(< (Int (inv lt0 ?s)) (Int (inv lt1 ?s)))"),
-        rw!("le"; "(Bool ?s)" => "(<= (Int (inv le0 ?s)) (Int (inv le1 ?s)))"),
-    ]
+        rw!("eq"; "(Bool ?s)" => "(Eql (Int (inv eq0 ?s)) (Int (inv eq1 ?s)))"),
+        //rw!("gt"; "(Bool ?s)" => "(> (Int (inv gt0 ?s)) (Int (inv gt1 ?s)))"),
+        rw!("ge"; "(Bool ?s)" => "(Geq (Int (inv ge0 ?s)) (Int (inv ge1 ?s)))"),
+        //rw!("lt"; "(Bool ?s)" => "(< (Int (inv lt0 ?s)) (Int (inv lt1 ?s)))"),
+        rw!("le"; "(Bool ?s)" => "(Leq (Int (inv le0 ?s)) (Int (inv le1 ?s)))"),
+        rw!("substr"; "(String ?s)" => "(SubStr (String (inv substring0 ?s)) (Int (inv substring1 ?s)) (Int(inv substring2 ?s)))"),
+        rw!("app"; "(String ?s)" => "(Append (String (inv append0  ?s)) (String (inv append1 ?s)))"),
+        rw!("replace"; "(String ?s)" => "(Replace (String (inv replace0 ?s)) (String (inv replace1 ?s)) (String (inv replace2 ?s)))"),
+        rw!("strlen"; "(Int ?s)" => "(StrLen (String (inv strlen0 ?s)))"),
+        rw!("StrAt"; "(String ?s)" => "(StrAt (String (inv strat0 ?s)) (Int (inv strat0 ?s)) )"),
+        rw!("IsPre"; "(Bool ?s)" => "(IsPre (String (inv na ?s)) (String (inv na ?s)) )"),
+        rw!("IsPost"; "(Bool ?s)" => "(IsPost (String (inv na ?s)) (String (inv na ?s)) )"),
+        rw!("Contains"; "(Bool ?s)" => "(Contains (String (inv na ?s)) (String (inv na ?s)) )"),
+        rw!("Index"; "(Int ?s)" => "(Index (String (inv index0 ?s)) (String (inv index1 ?s)) (Int (inv index2 ?s)))"),
+        rw!("replaceall"; "(String ?s)" => "(ReplaceAll (String (inv repall0 ?s)) (String (inv repall1 ?s)) (String (inv repall2 ?s)))"),
+        rw!("Add"; "(Int ?s)" => "(Add (Int (inv add0 ?s)) (Int (inv add1 ?s)) )"),
+        rw!("Min"; "(Int ?s)" => "(Min (Int (inv min0 ?s)) (Int (inv min1 ?s)) )"),
+        rw!("Mult"; "(Int ?s)" => "(Mult (Int (inv mult0 ?s)) (Int (inv mult1 ?s)) )"),
+        rw!("Div"; "(Int ?s)" => "(Div (Int (inv div0 ?s)) (Int (inv div1 ?s)) )"),
+        rw!("Abs"; "(Int ?s)" => "(Abs (Int (inv abs0 ?s)) (Int (inv abs1 ?s)) )"),
+        rw!("Mod"; "(Int ?s)" => "(Mod (Int (inv mod0 ?s)) (Int (inv mod1 ?s)) )"),
+        rw!("NegI"; "(Int ?s)" => "(NegI (Int (inv negi0 ?s)) )"),
+        rw!("NegB"; "(Bool ?s)" => "(NegB (Bool (inv negb0 ?s)) )"),
+        rw!("And"; "(Bool ?s)" => "(And (Bool (inv and0 ?s)) (Bool (inv and1 ?s)) )"),
+        rw!("Or"; "(Bool ?s)" => "(Or (Bool (inv or0 ?s)) (Bool (inv or1 ?s)) )"),
+        rw!("LexEq"; "(Bool ?s)" => "(LexEq (String (inv lexeq0 ?s)) (String (inv lexeq1 ?s)) )"),
+        rw!("LexLeq"; "(Bool ?s)" => "(LexLeq (String (inv lexleq0 ?s)) (String (inv lexleq1 ?s)) )"),
+        rw!("LexGeq"; "(Bool ?s)" => "(LexGeq (String (inv lexgeq0 ?s)) (String (inv lexgeq1 ?s)) )"),
+
+
+
+
+
+    ]   
 }
 
 fn build_egraph(examples: Spec) -> Runner<SLIALang, Spec> {

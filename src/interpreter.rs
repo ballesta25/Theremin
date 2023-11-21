@@ -360,11 +360,7 @@ impl Eval for Func {
                                 }
                             }
                         } else {
-                            let j = format!(
-                                "Index: arg3 out of bounds: arg1 = {:?}, arg3 = {:?}",
-                                arg1_evaled, arg3_evaled
-                            );
-                            Err(j)
+                            Ok(Expr::ConstInt(-1))
                         }
                     }
                     _ => Err(format!(
@@ -452,6 +448,25 @@ impl Eval for Func {
                         "LexGeq: invalid argument: arg1 = {:?} arg2 = {:?}",
                         arg1_evaled, arg2_evaled
                     )),
+                }
+            }
+
+            Self::IntToStr(arg1) => {
+                let arg1 = arg1.eval(env)?;
+                match arg1 {
+                    Expr::ConstInt(n) => Ok(Expr::ConstStr(n.to_string())),
+                    _ => Err(format!("IntToStr: invalid argument: arg1 = {:?}", arg1)),
+                }
+            }
+
+            Self::StrToInt(arg1) => {
+                let arg1 = arg1.eval(env)?;
+                match arg1 {
+                    Expr::ConstStr(s) => {
+                        let n = s.parse::<u32>();
+                        Ok(Expr::ConstInt(n.map_or(-1, |n| n.into())))
+                    }
+                    _ => Err(format!("StrToInt: invalid argument: arg1 = {:?}", arg1)),
                 }
             }
         }
