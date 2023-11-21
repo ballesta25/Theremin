@@ -1,7 +1,7 @@
 use core::fmt;
 use pest::{error::Error, iterators::Pair, Parser};
 use pest_derive::Parser;
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 use substring::Substring;
 
 use crate::language::{Expr, Func};
@@ -76,6 +76,15 @@ pub enum GTerm {
 pub enum Sort {
     Identifier(String),
     Application(String, Vec<Sort>),
+}
+
+impl Display for Sort {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Sort::Identifier(id) => write!(f, "{}", id),
+            Sort::Application(_, _) => unimplemented!(),
+        }
+    }
 }
 
 #[derive(Debug)]
