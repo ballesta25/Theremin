@@ -90,8 +90,12 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                                     if let Some(k) = inn.find(out) {
                                         let ilen = &inn.len();
                                         let olen = &out.len();
+                                        
+                                        if ilen > olen {
 
-                                        if k as i64 == 0 && (j == 0 || j == 1) {
+                                            None
+                                        }
+                                        else if k as i64 == 0 && (j == 0 || j == 1) {
                                             j = 1; //this example uses prepend instead of append and no prior examples used append
 
                                             Some((i.clone(), i.clone()))
@@ -133,8 +137,11 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                                     if let Some(k) = inn.find(out) {
                                         let ilen = &inn.len();
                                         let olen = &out.len();
-
-                                        if k as i64 == 0 && (j == 0 || j == 1) {
+                                        
+                                        if ilen > olen {
+                                            None
+                                        }
+                                        else if k as i64 == 0 && (j == 0 || j == 1) {
                                             j = 1; //this example uses prepend instead of append and no prior examples used append
 
                                             Some((
