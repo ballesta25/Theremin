@@ -6,9 +6,7 @@ pub mod sygus;
 
 use egg::{rewrite as rw, *};
 use language::*;
-use once_cell::sync::Lazy;
 use std::collections::HashMap;
-use std::iter;
 
 pub type SLIALang = SymbolLang;
 #[derive(Clone, Debug, Default)]
@@ -20,7 +18,17 @@ pub enum Spec {
 }
 use Spec::*;
 
-impl Analysis<SLIALang> for Spec {
+struct SLIASpec {
+    root: Spec,
+}
+
+impl SLIASpec {
+    fn new(root: Spec) -> Self {
+        Self { root }
+    }
+}
+
+impl Analysis<SLIALang> for SLIASpec {
     type Data = Spec;
 
     fn merge(&mut self, to: &mut Self::Data, from: Self::Data) -> DidMerge {
@@ -39,19 +47,22 @@ impl Analysis<SLIALang> for Spec {
                     egraph[enode.children[0]].nodes[0].op.as_str(), /*tag */
                 )
             }
-
+            "root_spec" => Self::root,
             _ => Indeterminate,
         }
     }
 }
 
 struct EvalCostFn<'a> {
-    egraph: &'a EGraph<SLIALang, Spec>,
+    egraph: &'a EGraph<SLIALang, SLIASpec>,
     component_fills: &'a mut HashMap<Id, Expr>,
 }
 
 impl<'a> EvalCostFn<'a> {
-    fn new(egraph: &'a EGraph<SLIALang, Spec>, component_fills: &'a mut HashMap<Id, Expr>) -> Self {
+    fn new(
+        egraph: &'a EGraph<SLIALang, SLIASpec>,
+        component_fills: &'a mut HashMap<Id, Expr>,
+    ) -> Self {
         Self {
             egraph,
             component_fills,
@@ -77,6 +88,8 @@ impl<'a> CostFunction<SLIALang> for EvalCostFn<'a> {
         let sorts: Vec<&str> = vec!["Int", "Bool", "String"];
         if sorts.iter().any(|&x| x == symbol) {
             // try to fill hole - if failure increment hole counter
+            //let class = self.egraph.lookup(enode);
+            //let spec = self.egraph[self.egraph.lookup(enode)?].data;
             holes += 1;
         } else {
             // not a hole
@@ -85,7 +98,7 @@ impl<'a> CostFunction<SLIALang> for EvalCostFn<'a> {
     }
 }
 
-pub fn grammar_rules() -> Vec<Rewrite<SLIALang, Spec>> {
+pub fn grammar_rules() -> Vec<Rewrite<SLIALang, SLIASpec>> {
     vec![
         rw!("eq"; "(Bool ?s)" => "(= (Int (inv eq0 ?s)) (Int (inv eq1 ?s)))"),
         rw!("gt"; "(Bool ?s)" => "(> (Int (inv gt0 ?s)) (Int (inv gt1 ?s)))"),
@@ -95,17 +108,18 @@ pub fn grammar_rules() -> Vec<Rewrite<SLIALang, Spec>> {
     ]
 }
 
-fn build_egraph(examples: Spec) -> (EGraph<SLIALang, Spec>, Runner<SLIALang, Spec>) {
-    let graph: EGraph<SLIALang, Spec> = Default::default();
+fn build_egraph(examples: Spec) -> Runner<SLIALang, SLIASpec> {
+    let analysis: SLIASpec = SLIASpec::new(examples);
+    //let graph: EGraph<SLIALang, SLIASpec> = EGraph::new(analysis);
 
     let start: RecExpr<SLIALang> = "(Bool root_spec)".parse().unwrap();
 
     let rules = grammar_rules();
 
-    let runner = Runner::default().with_expr(&start).run(&rules);
+    let runner = Runner::new(analysis).with_expr(&start).run(&rules);
 
-    println!("{:#?}", runner);
-    (graph, runner)
+    println!("{:#?}", runner.egraph.dump());
+    runner
 }
 
 pub fn add(left: usize, right: usize) -> usize {
@@ -118,9 +132,9 @@ mod tests {
 
     #[test]
     fn run_build_egraph() {
-        let (egraph, runner) = build_egraph(Indeterminate);
+        let runner = build_egraph(Indeterminate);
         let mut fills = HashMap::new();
-        let cost_function = EvalCostFn::new(&egraph, &mut fills);
+        let cost_function = EvalCostFn::new(&runner.egraph, &mut fills);
         let extractor = Extractor::new(&runner.egraph, cost_function);
         let ((cost_a, cost_b), best) = extractor.find_best(runner.roots[0]);
         println!(
