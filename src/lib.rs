@@ -6,6 +6,7 @@ pub mod sygus;
 
 use egg::{rewrite as rw, *};
 use language::*;
+use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
 pub type SLIALang = SymbolLang;
@@ -18,17 +19,7 @@ pub enum Spec {
 }
 use Spec::*;
 
-struct SLIASpec {
-    root: Spec,
-}
-
-impl SLIASpec {
-    fn new(root: Spec) -> Self {
-        Self { root }
-    }
-}
-
-impl Analysis<SLIALang> for SLIASpec {
+impl Analysis<SLIALang> for Spec {
     type Data = Spec;
 
     fn merge(&mut self, to: &mut Self::Data, from: Self::Data) -> DidMerge {
@@ -47,22 +38,19 @@ impl Analysis<SLIALang> for SLIASpec {
                     egraph[enode.children[0]].nodes[0].op.as_str(), /*tag */
                 )
             }
-            "root_spec" => Self::root,
+
             _ => Indeterminate,
         }
     }
 }
 
 struct EvalCostFn<'a> {
-    egraph: &'a EGraph<SLIALang, SLIASpec>,
+    egraph: &'a EGraph<SLIALang, Spec>,
     component_fills: &'a mut HashMap<Id, Expr>,
 }
 
 impl<'a> EvalCostFn<'a> {
-    fn new(
-        egraph: &'a EGraph<SLIALang, SLIASpec>,
-        component_fills: &'a mut HashMap<Id, Expr>,
-    ) -> Self {
+    fn new(egraph: &'a EGraph<SLIALang, Spec>, component_fills: &'a mut HashMap<Id, Expr>) -> Self {
         Self {
             egraph,
             component_fills,
@@ -98,7 +86,7 @@ impl<'a> CostFunction<SLIALang> for EvalCostFn<'a> {
     }
 }
 
-pub fn grammar_rules() -> Vec<Rewrite<SLIALang, SLIASpec>> {
+pub fn grammar_rules() -> Vec<Rewrite<SLIALang, Spec>> {
     vec![
         rw!("eq"; "(Bool ?s)" => "(= (Int (inv eq0 ?s)) (Int (inv eq1 ?s)))"),
         rw!("gt"; "(Bool ?s)" => "(> (Int (inv gt0 ?s)) (Int (inv gt1 ?s)))"),
@@ -108,15 +96,17 @@ pub fn grammar_rules() -> Vec<Rewrite<SLIALang, SLIASpec>> {
     ]
 }
 
-fn build_egraph(examples: Spec) -> Runner<SLIALang, SLIASpec> {
-    let analysis: SLIASpec = SLIASpec::new(examples);
-    //let graph: EGraph<SLIALang, SLIASpec> = EGraph::new(analysis);
+fn build_egraph(examples: Spec) -> Runner<SLIALang, Spec> {
+    //let graph: EGraph<SLIALang, Spec> = Default::default();
 
     let start: RecExpr<SLIALang> = "(Bool root_spec)".parse().unwrap();
-
     let rules = grammar_rules();
+    let mut runner = Runner::default().with_expr(&start);
+    runner.egraph.set_analysis_data(0.into(), examples);
+    runner.egraph.rebuild();
+    println!("{:#?}", runner.egraph.dump());
 
-    let runner = Runner::new(analysis).with_expr(&start).run(&rules);
+    runner = runner.run(&rules);
 
     println!("{:#?}", runner.egraph.dump());
     runner
@@ -132,7 +122,17 @@ mod tests {
 
     #[test]
     fn run_build_egraph() {
-        let runner = build_egraph(Indeterminate);
+        let runner = build_egraph(Examples(vec![(
+            Expr::call(Func::SubStr(
+                Expr::Var(String::from("Arg0")),
+                Expr::ConstInt(0),
+                Expr::call(Func::Min(
+                    Expr::call(Func::StrLen(Expr::Var(String::from("Arg0")))),
+                    Expr::ConstInt(3),
+                )),
+            )),
+            Expr::ConstStr(String::from("Fibbonacci200")),
+        )]));
         let mut fills = HashMap::new();
         let cost_function = EvalCostFn::new(&runner.egraph, &mut fills);
         let extractor = Extractor::new(&runner.egraph, cost_function);
