@@ -44,15 +44,21 @@ impl Analysis<SLIALang> for Spec {
     }
 }
 
-struct EvalCostFn<'a> {
+pub struct EvalCostFn<'a> {
     egraph: &'a EGraph<SLIALang, Spec>,
+    components: &'a HashMap<String, Vec<Expr>>,
     component_fills: &'a mut HashMap<Id, Expr>,
 }
 
 impl<'a> EvalCostFn<'a> {
-    fn new(egraph: &'a EGraph<SLIALang, Spec>, component_fills: &'a mut HashMap<Id, Expr>) -> Self {
+    pub fn new(
+        egraph: &'a EGraph<SLIALang, Spec>,
+        components: &'a HashMap<String, Vec<Expr>>,
+        component_fills: &'a mut HashMap<Id, Expr>,
+    ) -> Self {
         Self {
             egraph,
+            components,
             component_fills,
         }
     }
@@ -123,7 +129,7 @@ pub fn grammar_rules() -> Vec<Rewrite<SLIALang, Spec>> {
     ]
 }
 
-fn build_egraph(examples: Spec) -> Runner<SLIALang, Spec> {
+pub fn build_egraph(examples: Spec) -> Runner<SLIALang, Spec> {
     //let graph: EGraph<SLIALang, Spec> = Default::default();
 
     let start: RecExpr<SLIALang> = "(String root_spec)".parse().unwrap();
@@ -175,8 +181,9 @@ mod tests {
                 Expr::ConstStr("Ducati".into()),
             ),
         ]));
+        let components = HashMap::new();
         let mut fills = HashMap::new();
-        let cost_function = EvalCostFn::new(&runner.egraph, &mut fills);
+        let cost_function = EvalCostFn::new(&runner.egraph, &components, &mut fills);
         let extractor = Extractor::new(&runner.egraph, cost_function);
         let ((cost_a, cost_b), best) = extractor.find_best(runner.roots[0]);
         println!(
