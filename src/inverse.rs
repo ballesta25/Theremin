@@ -165,7 +165,7 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                     unwrap_vec(temp)
                 }
 
-                "StrLen0" => {
+                "strlen0" => {
                     let temp: Vec<Option<(Expr, Expr)>> = a
                         .iter()
                         .map(|(i, o)| {
