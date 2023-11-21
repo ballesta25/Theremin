@@ -38,10 +38,6 @@ impl Analysis<SLIALang> for Spec {
                     egraph[enode.children[0]].nodes[0].op.as_str(), /*tag */
                 )
             }
-            "String" | "Int" | "Bool" => {
-                egraph[enode.children[0]].data.clone() /*inherit spec from child*/
-                //Examples(Vec::new())
-            }
             _ => Indeterminate,
         }
     }
@@ -82,11 +78,7 @@ impl<'a> CostFunction<SLIALang> for EvalCostFn<'a> {
             "Int" | "Bool" | "String" => {
                 // try to fill hole - if failure increment hole counter
 
-                let class = self
-                    .egraph
-                    .lookup(enode.clone())
-                    .expect("lookup failed in cost fn");
-                let spec = &self.egraph[class].data;
+                let spec = &self.egraph[enode.children[0]].data;
                 match spec {
                     Impossible => unfillable += 1,
                     Indeterminate => holes += 1,
