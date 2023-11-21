@@ -76,8 +76,12 @@ impl<'a> CostFunction<SLIALang> for EvalCostFn<'a> {
         let sorts: Vec<&str> = vec!["Int", "Bool", "String"];
         if sorts.iter().any(|&x| x == symbol) {
             // try to fill hole - if failure increment hole counter
-            //let class = self.egraph.lookup(enode);
-            //let spec = self.egraph[self.egraph.lookup(enode)?].data;
+            let class = self
+                .egraph
+                .lookup(enode.clone())
+                .expect("lookup failed in cost fn");
+            let spec = &self.egraph[class].data;
+
             holes += 1;
         } else {
             // not a hole
