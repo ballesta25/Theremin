@@ -351,15 +351,18 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                     unwrap_vec(temp)
                 }
 
-
                 "strat0" => {
                     let temp: Vec<Option<(Expr, Expr)>> = a
                         .iter()
                         .map(|(i, o)| {
                             match (i, o) {
                                 (Expr::ConstStr(inn), Expr::ConstStr(out)) => {
-                                    if let Some(_) = inn.find(out) { //if it even exists within the other string
-                                        Some((Expr::ConstStr(inn.clone()), Expr::ConstStr(inn.clone())))
+                                    if let Some(_) = inn.find(out) {
+                                        //if it even exists within the other string
+                                        Some((
+                                            Expr::ConstStr(inn.clone()),
+                                            Expr::ConstStr(inn.clone()),
+                                        ))
                                     } else {
                                         None
                                     }
@@ -372,16 +375,18 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                     unwrap_vec(temp)
                 }
 
-                
-
                 "strat1" => {
                     let temp: Vec<Option<(Expr, Expr)>> = a
                         .iter()
                         .map(|(i, o)| {
                             match (i, o) {
                                 (Expr::ConstStr(inn), Expr::ConstStr(out)) => {
-                                    if let Some(_) = inn.find(out) { //if it even exists within the other string
-                                        Some((Expr::ConstStr(inn.clone()), Expr::ConstStr(inn.clone())))
+                                    if let Some(_) = inn.find(out) {
+                                        //if it even exists within the other string
+                                        Some((
+                                            Expr::ConstStr(inn.clone()),
+                                            Expr::ConstStr(inn.clone()),
+                                        ))
                                     } else {
                                         None
                                     }
@@ -393,11 +398,8 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
 
                     let j = unwrap_vec(temp);
                     if j == Spec::Impossible {
-
                         Spec::Impossible
-
-                    }   else {
-
+                    } else {
                         Spec::Indeterminate
                     }
                 }
@@ -408,8 +410,12 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                         .map(|(i, o)| {
                             match (i, o) {
                                 (Expr::ConstStr(inn), Expr::ConstInt(out)) => {
-                                    if inn.len() as i64 > *out { //if it even exists within the other string
-                                        Some((Expr::ConstStr(inn.clone()), Expr::ConstStr(inn.clone())))
+                                    if inn.len() as i64 > *out {
+                                        //if it even exists within the other string
+                                        Some((
+                                            Expr::ConstStr(inn.clone()),
+                                            Expr::ConstStr(inn.clone()),
+                                        ))
                                     } else {
                                         None
                                     }
@@ -428,8 +434,12 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                         .map(|(i, o)| {
                             match (i, o) {
                                 (Expr::ConstStr(inn), Expr::ConstInt(out)) => {
-                                    if inn.len() as i64 > *out { //if it even exists within the other string
-                                        Some((Expr::ConstStr(inn.clone()), Expr::ConstStr(inn.clone())))
+                                    if inn.len() as i64 > *out {
+                                        //if it even exists within the other string
+                                        Some((
+                                            Expr::ConstStr(inn.clone()),
+                                            Expr::ConstStr(inn.clone()),
+                                        ))
                                     } else {
                                         None
                                     }
@@ -441,16 +451,10 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
 
                     let j = unwrap_vec(temp);
                     if j == Spec::Impossible {
-
                         Spec::Impossible
-
                     } else {
-
                         Spec::Indeterminate
-
                     }
-
-
                 }
 
                 "index2" => {
@@ -459,8 +463,12 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                         .map(|(i, o)| {
                             match (i, o) {
                                 (Expr::ConstStr(inn), Expr::ConstInt(out)) => {
-                                    if inn.len() as i64 > *out { //if it even exists within the other string
-                                        Some((Expr::ConstStr(inn.clone()), Expr::ConstStr(inn.clone())))
+                                    if inn.len() as i64 > *out {
+                                        //if it even exists within the other string
+                                        Some((
+                                            Expr::ConstStr(inn.clone()),
+                                            Expr::ConstStr(inn.clone()),
+                                        ))
                                     } else {
                                         None
                                     }
@@ -472,18 +480,11 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
 
                     let j = unwrap_vec(temp);
                     if j == Spec::Impossible {
-
                         Spec::Impossible
-
                     } else {
-
                         Spec::Indeterminate
-
                     }
                 }
-
-
-
 
                 _ => Spec::Indeterminate, // we don't have good inverse semantics for these
             }
