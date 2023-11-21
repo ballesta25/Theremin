@@ -91,7 +91,9 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                                         let ilen = &inn.len();
                                         let olen = &out.len();
 
-                                        if ilen > olen {
+                                        if ilen >= olen {
+                                            //assuming that appending an empty string is not the solution
+
                                             None
                                         } else if k as i64 == 0 && (j == 0 || j == 1) {
                                             j = 1; //this example uses prepend instead of append and no prior examples used append
@@ -136,7 +138,7 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                                         let ilen = &inn.len();
                                         let olen = &out.len();
 
-                                        if ilen > olen {
+                                        if ilen >= olen {
                                             None
                                         } else if k as i64 == 0 && (j == 0 || j == 1) {
                                             j = 1; //this example uses prepend instead of append and no prior examples used append
@@ -241,11 +243,7 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                                                 == out2.nth(loc as usize).unwrap().to_string()
                                             {
                                                 sindex = loc;
-                                            }
-
-                                            if inn2.nth(loc as usize).unwrap().to_string()
-                                                != out2.nth(loc as usize).unwrap().to_string()
-                                            {
+                                            } else {
                                                 break;
                                             }
                                         }
@@ -255,18 +253,14 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                                                 == out2.nth(loc as usize).unwrap().to_string()
                                             {
                                                 eindex = loc;
-                                            }
-
-                                            if inn2.nth(loc as usize).unwrap().to_string()
-                                                != out2.nth(loc as usize).unwrap().to_string()
-                                            {
+                                            } else {
                                                 break;
                                             }
                                         }
 
                                         let tempstring = inn2
                                             .skip(sindex as usize)
-                                            .take((eindex - sindex) as usize)
+                                            .take(((ilen - 1 - eindex) - sindex) as usize)
                                             .collect::<String>(); //we are assuming that if we are replacing the enitre
                                                                   // string we have the wrong function I should have done these cases in the opposite order
 
@@ -311,11 +305,7 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                                                 == out2.nth(loc as usize).unwrap().to_string()
                                             {
                                                 sindex = loc;
-                                            }
-
-                                            if inn2.nth(loc as usize).unwrap().to_string()
-                                                != out2.nth(loc as usize).unwrap().to_string()
-                                            {
+                                            } else {
                                                 break;
                                             }
                                         }
@@ -325,18 +315,14 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                                                 == out2.nth(loc as usize).unwrap().to_string()
                                             {
                                                 eindex = loc;
-                                            }
-
-                                            if inn2.nth(loc as usize).unwrap().to_string()
-                                                != out2.nth(loc as usize).unwrap().to_string()
-                                            {
+                                            } else {
                                                 break;
                                             }
                                         }
 
                                         let tempstring = out2
                                             .skip(sindex as usize)
-                                            .take((olen - sindex - 1) as usize)
+                                            .take((olen - eindex - sindex - 1) as usize)
                                             .collect::<String>(); //we are assuming that if we are replacing the enitre
                                                                   // string we have the wrong function I should have done these cases in the opposite order
 
