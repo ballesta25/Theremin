@@ -62,10 +62,10 @@ fn main() {
                 let mut fills = HashMap::new();
                 let cost_function = EvalCostFn::new(&runner.egraph, &components, &mut fills);
                 let extractor = Extractor::new(&runner.egraph, cost_function);
-                let ((cost_a, cost_b), best) = extractor.find_best(runner.roots[0]);
+                let ((cost_a, cost_b, cost_c), best) = extractor.find_best(runner.roots[0]);
                 println!(
-                    "Result: {} with cost: {} holes, {} size",
-                    best, cost_a, cost_b,
+                    "Result: {} with cost: {} unfillable, {} holes, {} size",
+                    best, cost_a, cost_b, cost_c,
                 );
                 exit(0);
             }
