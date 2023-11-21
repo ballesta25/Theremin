@@ -1,8 +1,7 @@
+use egg::Extractor;
 use std::{collections::HashMap, env, fs, process::exit};
 use theremin::{
-    enumerate::bottom_up,
-    language::{Eval, Expr},
-    sygus::parse_sygus_file,
+    build_egraph, enumerate::bottom_up, language::Expr, sygus::parse_sygus_file, EvalCostFn, Spec,
 };
 
 fn main() {
@@ -26,15 +25,48 @@ fn main() {
                     function.grammar,
                     args[2].parse().expect("depth should be a number"),
                 );
-                println!("; {}", bank.len());
-                for (sort, terms) in bank {
-                    // let expr: Option<Expr> = (&term).try_into().ok();
-                    // let res = expr.map(|e| e.eval(&env));
-                    // println!("{}   ; ==> {:?}", term, res);
-                    for term in terms {
-                        println!("{}   ; {:?}", term, sort);
-                    }
-                }
+                let components: HashMap<String, Vec<Expr>> = bank
+                    .iter()
+                    .map(|(sort, terms)| {
+                        let exprs: Vec<Expr> =
+                            terms.iter().map(|t| t.try_into().unwrap()).collect();
+                        (sort.to_owned(), exprs)
+                    })
+                    .collect();
+                let runner = build_egraph(Spec::Examples(vec![
+                    (
+                        Expr::ConstStr("Ducati100".into()),
+                        Expr::ConstStr("Ducati".into()),
+                    ),
+                    (
+                        Expr::ConstStr("Honda125".into()),
+                        Expr::ConstStr("Honda".into()),
+                    ),
+                    (
+                        Expr::ConstStr("Ducati250".into()),
+                        Expr::ConstStr("Ducati".into()),
+                    ),
+                    (
+                        Expr::ConstStr("Honda250".into()),
+                        Expr::ConstStr("Honda".into()),
+                    ),
+                    (
+                        Expr::ConstStr("Honda550".into()),
+                        Expr::ConstStr("Honda".into()),
+                    ),
+                    (
+                        Expr::ConstStr("Ducati125".into()),
+                        Expr::ConstStr("Ducati".into()),
+                    ),
+                ]));
+                let mut fills = HashMap::new();
+                let cost_function = EvalCostFn::new(&runner.egraph, &components, &mut fills);
+                let extractor = Extractor::new(&runner.egraph, cost_function);
+                let ((cost_a, cost_b, cost_c), best) = extractor.find_best(runner.roots[0]);
+                println!(
+                    "Result: {} with cost: {} unfillable, {} holes, {} size",
+                    best, cost_a, cost_b, cost_c,
+                );
                 exit(0);
             }
         }

@@ -38,51 +38,71 @@ impl Analysis<SLIALang> for Spec {
                     egraph[enode.children[0]].nodes[0].op.as_str(), /*tag */
                 )
             }
-
+            "String" | "Int" | "Bool" => {
+                egraph[enode.children[0]].data.clone() /*inherit spec from child*/
+                //Examples(Vec::new())
+            }
             _ => Indeterminate,
         }
     }
 }
 
-struct EvalCostFn<'a> {
+pub struct EvalCostFn<'a> {
     egraph: &'a EGraph<SLIALang, Spec>,
+    components: &'a HashMap<String, Vec<Expr>>,
     component_fills: &'a mut HashMap<Id, Expr>,
 }
 
 impl<'a> EvalCostFn<'a> {
-    fn new(egraph: &'a EGraph<SLIALang, Spec>, component_fills: &'a mut HashMap<Id, Expr>) -> Self {
+    pub fn new(
+        egraph: &'a EGraph<SLIALang, Spec>,
+        components: &'a HashMap<String, Vec<Expr>>,
+        component_fills: &'a mut HashMap<Id, Expr>,
+    ) -> Self {
         Self {
             egraph,
+            components,
             component_fills,
         }
     }
 }
 
 impl<'a> CostFunction<SLIALang> for EvalCostFn<'a> {
-    // (num_holes, size)
-    type Cost = (usize, usize);
+    // (unfillable_holes, num_holes, size)
+    type Cost = (usize, usize, usize);
     fn cost<C>(&mut self, enode: &SLIALang, mut costs: C) -> Self::Cost
     where
         C: FnMut(Id) -> Self::Cost,
     {
-        let (mut holes, mut size) = (0, 1);
-        enode.fold((0, 1), |(a, b), id| {
-            let (a1, b1) = costs(id);
-            (a + a1, b + b1)
-        });
+        let (mut unfillable, mut holes, mut size) = (0, 0, 1);
 
         //check if enode *is* a hole
         let symbol = enode.op.as_str();
-        let sorts: Vec<&str> = vec!["Int", "Bool", "String"];
-        if sorts.iter().any(|&x| x == symbol) {
-            // try to fill hole - if failure increment hole counter
-            //let class = self.egraph.lookup(enode);
-            //let spec = self.egraph[self.egraph.lookup(enode)?].data;
-            holes += 1;
-        } else {
-            // not a hole
-        }
-        (holes, size)
+        match symbol {
+            "Int" | "Bool" | "String" => {
+                // try to fill hole - if failure increment hole counter
+
+                let class = self
+                    .egraph
+                    .lookup(enode.clone())
+                    .expect("lookup failed in cost fn");
+                let spec = &self.egraph[class].data;
+                match spec {
+                    Impossible => unfillable += 1,
+                    Indeterminate => holes += 1,
+                    Examples(io) => {
+                        // try to fill
+                        /* on failure */
+                        unfillable += 1
+                    }
+                };
+            }
+            _ => (),
+        };
+        enode.fold((unfillable, holes, size), |(a, b, c), id| {
+            let (a1, b1, c1) = costs(id);
+            (a + a1, b + b1, c + c1)
+        })
     }
 }
 
@@ -119,7 +139,7 @@ pub fn grammar_rules() -> Vec<Rewrite<SLIALang, Spec>> {
     ]
 }
 
-fn build_egraph(examples: Spec) -> Runner<SLIALang, Spec> {
+pub fn build_egraph(examples: Spec) -> Runner<SLIALang, Spec> {
     //let graph: EGraph<SLIALang, Spec> = Default::default();
 
     let start: RecExpr<SLIALang> = "(String root_spec)".parse().unwrap();
@@ -171,13 +191,14 @@ mod tests {
                 Expr::ConstStr("Ducati".into()),
             ),
         ]));
+        let components = HashMap::new();
         let mut fills = HashMap::new();
-        let cost_function = EvalCostFn::new(&runner.egraph, &mut fills);
+        let cost_function = EvalCostFn::new(&runner.egraph, &components, &mut fills);
         let extractor = Extractor::new(&runner.egraph, cost_function);
-        let ((cost_a, cost_b), best) = extractor.find_best(runner.roots[0]);
+        let ((cost_a, cost_b, cost_c), best) = extractor.find_best(runner.roots[0]);
         println!(
-            "Result: {} with cost: {} holes, {} size",
-            best, cost_a, cost_b,
+            "Result: {} with cost: {} unfillable, {} holes, {} size",
+            best, cost_a, cost_b, cost_c,
         );
     }
 
