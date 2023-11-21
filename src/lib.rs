@@ -145,17 +145,14 @@ mod tests {
 
     #[test]
     fn run_build_egraph() {
-        let runner = build_egraph(Examples(vec![(
-            Expr::call(Func::SubStr(
-                Expr::Var(String::from("Arg0")),
-                Expr::ConstInt(0),
-                Expr::call(Func::Min(
-                    Expr::call(Func::StrLen(Expr::Var(String::from("Arg0")))),
-                    Expr::ConstInt(3),
-                )),
-            )),
-            Expr::ConstStr(String::from("Fibbonacci200")),
-        )]));
+        let runner = build_egraph(Examples(vec![ 
+        (Expr::ConstStr("Ducati100".into()), Expr::ConstStr("Ducati".into())),
+        (Expr::ConstStr("Honda125".into()), Expr::ConstStr("Honda".into())),
+        (Expr::ConstStr("Ducati250".into()), Expr::ConstStr("Ducati".into())),
+        (Expr::ConstStr("Honda250".into()), Expr::ConstStr("Honda".into())),
+        (Expr::ConstStr("Honda550".into()), Expr::ConstStr("Honda".into())),
+        (Expr::ConstStr("Ducati125".into()), Expr::ConstStr("Ducati".into())),
+        ]));
         let mut fills = HashMap::new();
         let cost_function = EvalCostFn::new(&runner.egraph, &mut fills);
         let extractor = Extractor::new(&runner.egraph, cost_function);
