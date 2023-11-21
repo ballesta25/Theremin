@@ -66,27 +66,27 @@ impl<'a> CostFunction<SLIALang> for EvalCostFn<'a> {
         C: FnMut(Id) -> Self::Cost,
     {
         let (mut holes, mut size) = (0, 1);
-        enode.fold((0, 1), |(a, b), id| {
-            let (a1, b1) = costs(id);
-            (a + a1, b + b1)
-        });
 
         //check if enode *is* a hole
         let symbol = enode.op.as_str();
-        let sorts: Vec<&str> = vec!["Int", "Bool", "String"];
-        if sorts.iter().any(|&x| x == symbol) {
-            // try to fill hole - if failure increment hole counter
-            let class = self
-                .egraph
-                .lookup(enode.clone())
-                .expect("lookup failed in cost fn");
-            let spec = &self.egraph[class].data;
+        match symbol {
+            "Int" | "Bool" | "String" => {
+                // try to fill hole - if failure increment hole counter
 
-            holes += 1;
-        } else {
-            // not a hole
-        }
-        (holes, size)
+                let class = self
+                    .egraph
+                    .lookup(enode.clone())
+                    .expect("lookup failed in cost fn");
+                let spec = &self.egraph[class].data;
+
+                holes += 1;
+            }
+            _ => (),
+        };
+        enode.fold((holes, size), |(a, b), id| {
+            let (a1, b1) = costs(id);
+            (a + a1, b + b1)
+        })
     }
 }
 
