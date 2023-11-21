@@ -4,6 +4,8 @@ use pest_derive::Parser;
 use std::collections::HashMap;
 use substring::Substring;
 
+use crate::language::{Expr, Func};
+
 #[derive(Parser)]
 #[grammar = "sygus.pest"]
 pub struct SygusParser;
@@ -70,7 +72,7 @@ pub enum GTerm {
     BFTerm(BFTerm),
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum Sort {
     Identifier(String),
     Application(String, Vec<Sort>),
@@ -123,6 +125,158 @@ impl fmt::Display for Term {
             }
             Term::Identifier(name) => write!(f, "{}", name),
             Term::Literal(lit) => write!(f, "{}", lit),
+        }
+    }
+}
+
+impl TryFrom<&Term> for Expr {
+    type Error = ();
+
+    fn try_from(value: &Term) -> Result<Self, Self::Error> {
+        match value {
+            Term::Identifier(name) => Ok(Expr::Var(name.to_owned())),
+            Term::Literal(Literal::Bool(b)) => Ok(Expr::ConstBool(b.to_owned())),
+            Term::Literal(Literal::Decimal(_)) => Err(()),
+            Term::Literal(Literal::Numeral(n)) => Ok(Expr::ConstInt(n.to_owned())),
+            Term::Literal(Literal::String(s)) => Ok(Expr::ConstStr(s.to_owned())),
+            Term::Application(f, params) => Ok(Expr::Call(match f.as_str() {
+                "str.++" if params.len() >= 2 => {
+                    let a = params.get(0).unwrap().try_into()?;
+                    let b = params.get(1).unwrap().try_into()?;
+                    Box::new(Func::Append(a, b))
+                }
+                "str.len" if params.len() >= 1 => {
+                    let a = params.get(0).unwrap().try_into()?;
+                    Box::new(Func::StrLen(a))
+                }
+                "str.at" if params.len() >= 2 => {
+                    let a = params.get(0).unwrap().try_into()?;
+                    let b = params.get(1).unwrap().try_into()?;
+                    Box::new(Func::StrAt(a, b))
+                }
+                "str.substr" if params.len() >= 3 => {
+                    let a = params.get(0).unwrap().try_into()?;
+                    let b = params.get(1).unwrap().try_into()?;
+                    let c = params.get(2).unwrap().try_into()?;
+                    Box::new(Func::SubStr(a, b, c))
+                }
+                "str.prefixof" if params.len() >= 2 => {
+                    let a = params.get(0).unwrap().try_into()?;
+                    let b = params.get(1).unwrap().try_into()?;
+                    Box::new(Func::IsPre(a, b))
+                }
+                "str.suffixof" if params.len() >= 2 => {
+                    let a = params.get(0).unwrap().try_into()?;
+                    let b = params.get(1).unwrap().try_into()?;
+                    Box::new(Func::IsPost(a, b))
+                }
+                "str.contains" if params.len() >= 2 => {
+                    let a = params.get(0).unwrap().try_into()?;
+                    let b = params.get(1).unwrap().try_into()?;
+                    Box::new(Func::Contains(a, b))
+                }
+                "str.indexof" if params.len() >= 3 => {
+                    let a = params.get(0).unwrap().try_into()?;
+                    let b = params.get(1).unwrap().try_into()?;
+                    let c = params.get(2).unwrap().try_into()?;
+                    Box::new(Func::Index(a, b, c))
+                }
+                "str.replace" if params.len() >= 3 => {
+                    let a = params.get(0).unwrap().try_into()?;
+                    let b = params.get(1).unwrap().try_into()?;
+                    let c = params.get(2).unwrap().try_into()?;
+                    Box::new(Func::Replace(a, b, c))
+                }
+                "str.replace" if params.len() >= 3 => {
+                    let a = params.get(0).unwrap().try_into()?;
+                    let b = params.get(1).unwrap().try_into()?;
+                    let c = params.get(2).unwrap().try_into()?;
+                    Box::new(Func::Replace(a, b, c))
+                }
+                "str.replace_all" if params.len() >= 3 => {
+                    let a = params.get(0).unwrap().try_into()?;
+                    let b = params.get(1).unwrap().try_into()?;
+                    let c = params.get(2).unwrap().try_into()?;
+                    Box::new(Func::ReplaceAll(a, b, c))
+                }
+                "<=" if params.len() >= 2 => {
+                    let a = params.get(0).unwrap().try_into()?;
+                    let b = params.get(1).unwrap().try_into()?;
+                    Box::new(Func::Leq(a, b))
+                }
+                "<=" if params.len() >= 2 => {
+                    let a = params.get(0).unwrap().try_into()?;
+                    let b = params.get(1).unwrap().try_into()?;
+                    Box::new(Func::Leq(a, b))
+                }
+                ">=" if params.len() >= 2 => {
+                    let a = params.get(0).unwrap().try_into()?;
+                    let b = params.get(1).unwrap().try_into()?;
+                    Box::new(Func::Geq(a, b))
+                }
+                "=" if params.len() >= 2 => {
+                    let a = params.get(0).unwrap().try_into()?;
+                    let b = params.get(1).unwrap().try_into()?;
+                    Box::new(Func::Eql(a, b))
+                }
+                "+" if params.len() >= 2 => {
+                    let a = params.get(0).unwrap().try_into()?;
+                    let b = params.get(1).unwrap().try_into()?;
+                    Box::new(Func::Add(a, b))
+                }
+                "-" if params.len() >= 2 => {
+                    let a = params.get(0).unwrap().try_into()?;
+                    let b = params.get(1).unwrap().try_into()?;
+                    Box::new(Func::Min(a, b))
+                }
+                "-" if params.len() >= 1 => {
+                    let a = params.get(0).unwrap().try_into()?;
+                    Box::new(Func::NegI(a))
+                }
+                "*" if params.len() >= 2 => {
+                    let a = params.get(0).unwrap().try_into()?;
+                    let b = params.get(1).unwrap().try_into()?;
+                    Box::new(Func::Mult(a, b))
+                }
+                "div" if params.len() >= 2 => {
+                    let a = params.get(0).unwrap().try_into()?;
+                    let b = params.get(1).unwrap().try_into()?;
+                    Box::new(Func::Div(a, b))
+                }
+                "abs" if params.len() >= 1 => {
+                    let a = params.get(0).unwrap().try_into()?;
+                    Box::new(Func::Abs(a))
+                }
+                "mod" if params.len() >= 2 => {
+                    let a = params.get(0).unwrap().try_into()?;
+                    let b = params.get(1).unwrap().try_into()?;
+                    Box::new(Func::Mod(a, b))
+                }
+                "and" if params.len() >= 2 => {
+                    let a = params.get(0).unwrap().try_into()?;
+                    let b = params.get(1).unwrap().try_into()?;
+                    Box::new(Func::And(a, b))
+                }
+                "or" if params.len() >= 2 => {
+                    let a = params.get(0).unwrap().try_into()?;
+                    let b = params.get(1).unwrap().try_into()?;
+                    Box::new(Func::Or(a, b))
+                }
+                "str.<=" if params.len() >= 2 => {
+                    let a = params.get(0).unwrap().try_into()?;
+                    let b = params.get(1).unwrap().try_into()?;
+                    Box::new(Func::LexLeq(a, b))
+                }
+                "int.to.str" if params.len() >= 1 => {
+                    let a = params.get(0).unwrap().try_into()?;
+                    Box::new(Func::IntToStr(a))
+                }
+                "str.to.int" if params.len() >= 1 => {
+                    let a = params.get(0).unwrap().try_into()?;
+                    Box::new(Func::StrToInt(a))
+                }
+                _ => Err(())?,
+            })),
         }
     }
 }

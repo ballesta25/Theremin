@@ -1,8 +1,8 @@
-use crate::sygus::{BFTerm, GTerm, Grammar, Term};
+use crate::sygus::{BFTerm, GTerm, Grammar, Sort, Term};
 use itertools::Itertools;
 use std::collections::HashMap;
 
-pub fn bottom_up(grammar: Grammar, depth: usize) -> Vec<Term> {
+pub fn bottom_up(grammar: Grammar, depth: usize) -> HashMap<Sort, Vec<Term>> {
     let mut bank: HashMap<(String, usize), Vec<Term>> = HashMap::new();
     for d in 0..depth {
         for (name, _, rhs) in &grammar.rules[1..] {
@@ -11,11 +11,14 @@ pub fn bottom_up(grammar: Grammar, depth: usize) -> Vec<Term> {
             }
         }
     }
-    let mut terms: Vec<Term> = Vec::new();
+    let mut terms: HashMap<Sort, Vec<Term>> = HashMap::new();
     for d in 0..depth {
-        for (name, _, _) in &grammar.rules[1..] {
+        for (name, sort, _) in &grammar.rules[1..] {
             if let Some(ts) = bank.get_mut(&(name.to_owned(), d)) {
-                terms.append(ts);
+                terms
+                    .entry(sort.clone())
+                    .and_modify(|e| e.append(ts))
+                    .or_insert(ts.to_vec());
             }
         }
     }
