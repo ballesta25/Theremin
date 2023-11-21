@@ -116,18 +116,13 @@ pub fn grammar_rules() -> Vec<Rewrite<SLIALang, Spec>> {
         rw!("LexEq"; "(Bool ?s)" => "(LexEq (String (inv lexeq0 ?s)) (String (inv lexeq1 ?s)) )"),
         rw!("LexLeq"; "(Bool ?s)" => "(LexLeq (String (inv lexleq0 ?s)) (String (inv lexleq1 ?s)) )"),
         rw!("LexGeq"; "(Bool ?s)" => "(LexGeq (String (inv lexgeq0 ?s)) (String (inv lexgeq1 ?s)) )"),
-
-
-
-
-
-    ]   
+    ]
 }
 
 fn build_egraph(examples: Spec) -> Runner<SLIALang, Spec> {
     //let graph: EGraph<SLIALang, Spec> = Default::default();
 
-    let start: RecExpr<SLIALang> = "(Bool root_spec)".parse().unwrap();
+    let start: RecExpr<SLIALang> = "(String root_spec)".parse().unwrap();
     let rules = grammar_rules();
     let mut runner = Runner::default().with_expr(&start);
     runner.egraph.set_analysis_data(0.into(), examples);
