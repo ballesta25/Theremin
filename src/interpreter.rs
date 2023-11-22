@@ -215,13 +215,9 @@ impl Eval for Func {
                 let arg2_evaled = arg2.eval(env)?;
 
                 match (&arg1_evaled, &arg2_evaled) {
-                    (Expr::ConstStr(a1), Expr::ConstInt(a2)) => {
-                        Ok(Expr::ConstStr(if a2 < &(a1.len() as i64) {
-                            a1.chars().nth(*a2 as usize).unwrap().to_string()
-                        } else {
-                            "".to_string()
-                        }))
-                    }
+                    (Expr::ConstStr(a1), Expr::ConstInt(a2)) => Ok(Expr::ConstStr(
+                        a1.chars().nth(*a2 as usize).map_or("".into(), |c| c.into()),
+                    )),
                     _ => Err(format!(
                         "StrLen: invalid argument: arg1 = {:?} arg2 = {:?}",
                         arg1_evaled, arg2_evaled
