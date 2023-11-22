@@ -72,6 +72,7 @@ impl<'a> CostFunction<SLIALang> for EvalCostFn<'a> {
     {
         let (mut unfillable, mut holes, mut size) = (0, 0, 1);
 
+        let class = self.egraph.lookup(enode.clone()).unwrap();
         //check if enode *is* a hole
         let symbol = enode.op.as_str();
         match symbol {
@@ -82,8 +83,18 @@ impl<'a> CostFunction<SLIALang> for EvalCostFn<'a> {
                 match spec {
                     Impossible => unfillable += 1,
                     Indeterminate => holes += 1,
-                    Examples(io) => {
+                    Examples(ios) => {
                         // try to fill
+                        for e in self.components[symbol].iter() {
+                            if ios.iter().all(|(i, o)| {
+                                let mut env: HashMap<String, Expr> = HashMap::new();
+                                env.insert(String::from("name"), i.clone());
+                                e.clone().eval(&env) == Ok(o.clone())
+                            }) {
+                                self.component_fills.insert(class, e.clone());
+                                break;
+                            }
+                        }
                         /* on failure */
                         unfillable += 1
                     }
