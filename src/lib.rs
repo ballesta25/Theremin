@@ -85,18 +85,22 @@ impl<'a> CostFunction<SLIALang> for EvalCostFn<'a> {
                     Indeterminate => holes += 1,
                     Examples(ios) => {
                         // try to fill
+                        let mut found_fill = false;
                         for e in self.components[symbol].iter() {
                             if ios.iter().all(|(i, o)| {
                                 let mut env: HashMap<String, Expr> = HashMap::new();
                                 env.insert(String::from("name"), i.clone());
                                 e.clone().eval(&env) == Ok(o.clone())
                             }) {
+                                found_fill = true;
                                 self.component_fills.insert(class, e.clone());
                                 break;
                             }
                         }
                         /* on failure */
-                        unfillable += 1
+                        if !found_fill {
+                            unfillable += 1
+                        };
                     }
                 };
             }
