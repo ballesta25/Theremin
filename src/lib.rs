@@ -4,9 +4,9 @@ pub mod inverse;
 pub mod language;
 pub mod sygus;
 
-use egg::{rewrite as rw, *};
-use language::*;
-use once_cell::sync::Lazy;
+use egg::{self, CostFunction, EGraph, Id, Language, RecExpr, Rewrite, Runner, SymbolLang};
+use egg::{rewrite as rw, Analysis, DidMerge};
+use language::{Eval, Expr};
 use std::collections::HashMap;
 
 pub type SLIALang = SymbolLang;
@@ -70,7 +70,7 @@ impl<'a> CostFunction<SLIALang> for EvalCostFn<'a> {
     where
         C: FnMut(Id) -> Self::Cost,
     {
-        let (mut unfillable, mut holes, mut size) = (0, 0, 1);
+        let (mut unfillable, mut holes, size) = (0, 0, 1);
 
         let class = self.egraph.lookup(enode.clone()).unwrap();
         //check if enode *is* a hole
@@ -146,19 +146,15 @@ pub fn grammar_rules() -> Vec<Rewrite<SLIALang, Spec>> {
     ]
 }
 
-pub fn build_egraph(examples: Spec) -> Runner<SLIALang, Spec> {
-    //let graph: EGraph<SLIALang, Spec> = Default::default();
-
+pub fn build_runner(examples: Spec) -> Runner<SLIALang, Spec> {
     let start: RecExpr<SLIALang> = "(String root_spec)".parse().unwrap();
     let rules = grammar_rules();
     let mut runner = Runner::default().with_expr(&start);
     runner.egraph.set_analysis_data(0.into(), examples);
     runner.egraph.rebuild();
-    println!("{:#?}", runner.egraph.dump());
 
     runner = runner.run(&rules);
 
-    println!("{:#?}", runner.egraph.dump());
     runner
 }
 
@@ -168,11 +164,13 @@ pub fn add(left: usize, right: usize) -> usize {
 
 #[cfg(test)]
 mod tests {
+    use egg::Extractor;
+
     use super::*;
 
     #[test]
     fn run_build_egraph() {
-        let runner = build_egraph(Examples(vec![
+        let runner = build_runner(Examples(vec![
             (
                 Expr::ConstStr("Ducati100".into()),
                 Expr::ConstStr("Ducati".into()),

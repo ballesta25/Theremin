@@ -74,15 +74,12 @@ variable = { "(" ~ "Variable" ~ sort ~ ")" }
 
 feature = { ":grammar" | ":fwd-decls" | ":recursion" | ":oracles" | ":weights" }
 
-term = {
-    "(" ~ "let" ~ "(" ~ var_binding+ ~ ")" ~ term ~ ")"
-  | "(" ~ "forall" ~ "(" ~ sorted_var+ ~ ")" ~ term ~ ")"
-  | "(" ~ "exists" ~ "(" ~ sorted_var+ ~ ")" ~ term ~ ")"
-  | "(" ~ "!" ~ term ~ attribute+ ~ ")"
-  | "(" ~ identifier ~ term+ ~ ")"
-  | literal
-  | identifier
-}
+term             = { term_let | term_forall | term_exists | term_annotated | term_application | literal | identifier }
+term_let         = { "(" ~ "let" ~ "(" ~ var_binding+ ~ ")" ~ term ~ ")" }
+term_forall      = { "(" ~ "forall" ~ "(" ~ sorted_var+ ~ ")" ~ term ~ ")" }
+term_exists      = { "(" ~ "exists" ~ "(" ~ sorted_var+ ~ ")" ~ term ~ ")" }
+term_annotated   = { "(" ~ "!" ~ term ~ attribute+ ~ ")" }
+term_application = { "(" ~ identifier ~ term+ ~ ")" }
 
 bf_term        = { bf_attributes | bf_application | literal | identifier }
 bf_attributes  = { "(" ~ "!" ~ bf_term ~ attribute+ ~ ")" }

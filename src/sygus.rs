@@ -23,9 +23,9 @@ pub struct Conjecture {
     /// A list of variables v_1,...,v_m, known as the universal variables
     pub universal_variables: Vec<String>,
     /// A list of formulas φ = φ_1, ..., φ_q, known as the current constraints
-    pub constraints: Vec<i32>,
+    pub constraints: Vec<Term>,
     /// A list of formulas α = α_1, ..., α_r, known as the current assumptions
-    pub assumptions: Vec<i32>,
+    pub assumptions: Vec<Term>,
     /// The set of defined symbols in the current scope
     pub signature: HashMap<String, i32>,
     /// The SyGuS logic
@@ -42,6 +42,36 @@ impl Conjecture {
             signature: HashMap::new(),
             logic: None,
         }
+    }
+}
+
+impl Conjecture {
+    pub fn specification(&self) -> Option<Vec<(Expr, Expr)>> {
+        let mut examples = Vec::new();
+        for constraint in &self.constraints {
+            match constraint {
+                // Check if in form `(= ...)`
+                Term::Application(f, terms) if f == "=" => {
+                    match terms.as_slice() {
+                        // Check if (f _ ...) and "..."
+                        [Term::Application(f, terms), Term::Literal(Literal::String(o)), ..]
+                            if f == "f" =>
+                        {
+                            match terms.as_slice() {
+                                [Term::Literal(Literal::String(i)), ..] => examples.push((
+                                    Expr::ConstStr(i.to_owned()),
+                                    Expr::ConstStr(o.to_owned()),
+                                )),
+                                _ => return None,
+                            }
+                        }
+                        _ => return None,
+                    }
+                }
+                _ => return None,
+            }
+        }
+        Some(examples)
     }
 }
 
@@ -87,7 +117,7 @@ impl Display for Sort {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum BFTerm {
     Identifier(String),
     Literal(Literal),
@@ -95,19 +125,36 @@ pub enum BFTerm {
     // Annotated(Box<BFTerm>, Vec<Attribute>), // Unimplemented
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Literal {
     Numeral(i64),
-    Decimal(f64),
+    // Decimal(f64), // Unsupported
     Bool(bool),
     String(String),
+}
+
+impl From<bool> for Literal {
+    fn from(value: bool) -> Self {
+        Literal::Bool(value)
+    }
+}
+
+impl From<i64> for Literal {
+    fn from(value: i64) -> Self {
+        Literal::Numeral(value)
+    }
+}
+
+impl From<String> for Literal {
+    fn from(value: String) -> Self {
+        Literal::String(value)
+    }
 }
 
 impl fmt::Display for Literal {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Literal::Numeral(n) => write!(f, "{}", n),
-            Literal::Decimal(n) => write!(f, "{}", n),
             Literal::Bool(true) => write!(f, "true"),
             Literal::Bool(false) => write!(f, "false"),
             Literal::String(s) => write!(f, "\"{}\"", s.replace('"', "\\\"")),
@@ -120,11 +167,17 @@ pub enum Term {
     Identifier(String),
     Literal(Literal),
     Application(String, Vec<Term>),
+    // Annotation(Box<Term>, Vec<Attribute>), // Unimplemented
+    // Exists(Vec<(String, Sort)>, Box<Term>), // Unimplemented
+    // ForAll(Vec<(String, Sort)>, Box<Term>), // Unimplemented
+    // Let(Vec<(String, Term)>, Box<Term>), // Unimplemented
 }
 
 impl fmt::Display for Term {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Term::Identifier(name) => write!(f, "{}", name),
+            Term::Literal(lit) => write!(f, "{}", lit),
             Term::Application(name, terms) => {
                 write!(f, "({}", name)?;
                 for term in terms {
@@ -132,8 +185,6 @@ impl fmt::Display for Term {
                 }
                 write!(f, ")")
             }
-            Term::Identifier(name) => write!(f, "{}", name),
-            Term::Literal(lit) => write!(f, "{}", lit),
         }
     }
 }
@@ -145,7 +196,6 @@ impl TryFrom<&Term> for Expr {
         match value {
             Term::Identifier(name) => Ok(Expr::Var(name.to_owned())),
             Term::Literal(Literal::Bool(b)) => Ok(Expr::ConstBool(b.to_owned())),
-            Term::Literal(Literal::Decimal(_)) => Err(()),
             Term::Literal(Literal::Numeral(n)) => Ok(Expr::ConstInt(n.to_owned())),
             Term::Literal(Literal::String(s)) => Ok(Expr::ConstStr(s.to_owned())),
             Term::Application(f, params) => Ok(Expr::Call(match f.as_str() {
@@ -290,7 +340,7 @@ impl TryFrom<&Term> for Expr {
     }
 }
 
-pub fn parse_sygus_file(file: &str) -> Result<Conjecture, Box<Error<Rule>>> {
+pub fn parse_file(file: &str) -> Result<Conjecture, Box<Error<Rule>>> {
     let sygus = SygusParser::parse(Rule::sygus, file)?.next().unwrap();
     Ok(parse_conjecture(sygus))
 }
@@ -325,6 +375,11 @@ fn parse_conjecture(pair: Pair<Rule>) -> Conjecture {
                     return_sort,
                     grammar,
                 });
+            }
+            Rule::constraint => {
+                let inner_rule = pair.into_inner().next().unwrap();
+                let term = parse_term(inner_rule);
+                conjecture.constraints.push(term);
             }
             _ => {}
         }
@@ -380,8 +435,6 @@ fn parse_grammar(pair: Pair<Rule>) -> Grammar {
 fn parse_g_term(pair: Pair<Rule>) -> GTerm {
     let pair = pair.into_inner().next().unwrap();
     match pair.as_rule() {
-        // Rule::constant => GTerm::Constant(parse_sort(pair.into_inner().next().unwrap())),
-        // Rule::variable => GTerm::Variable(parse_sort(pair.into_inner().next().unwrap())),
         Rule::bf_term => GTerm::BFTerm(parse_bf_term(pair)),
         _ => unimplemented!("Unsupported g_term: {:#?}", pair),
     }
@@ -390,7 +443,6 @@ fn parse_g_term(pair: Pair<Rule>) -> GTerm {
 fn parse_bf_term(pair: Pair<Rule>) -> BFTerm {
     let pair = pair.into_inner().next().unwrap();
     match pair.as_rule() {
-        // Rule::bf_attributes => unimplemented!("Unsupported bf_attributes"),
         Rule::bf_application => {
             let mut inner_rules = pair.into_inner();
             let identifier = inner_rules.next().unwrap().as_str().to_string();
@@ -403,11 +455,25 @@ fn parse_bf_term(pair: Pair<Rule>) -> BFTerm {
     }
 }
 
+fn parse_term(pair: Pair<Rule>) -> Term {
+    let pair = pair.into_inner().next().unwrap();
+    match pair.as_rule() {
+        Rule::term_application => {
+            let mut inner_rules = pair.into_inner();
+            let identifier = inner_rules.next().unwrap().as_str().to_string();
+            let terms: Vec<Term> = inner_rules.map(parse_term).collect();
+            Term::Application(identifier, terms)
+        }
+        Rule::literal => Term::Literal(parse_literal(pair)),
+        Rule::identifier => Term::Identifier(pair.as_str().to_string()),
+        _ => unimplemented!("Unsupported term: {:#?}", pair),
+    }
+}
+
 fn parse_literal(pair: Pair<Rule>) -> Literal {
     let pair = pair.into_inner().next().unwrap();
     match pair.as_rule() {
         Rule::numeral => Literal::Numeral(pair.as_str().to_string().parse::<i64>().unwrap()),
-        Rule::decimal => Literal::Decimal(pair.as_str().to_string().parse::<f64>().unwrap()),
         Rule::bool_const => Literal::Bool(pair.as_str().to_string().parse::<bool>().unwrap()),
         Rule::string_const => {
             let literal = pair.as_str().to_string();
@@ -419,5 +485,138 @@ fn parse_literal(pair: Pair<Rule>) -> Literal {
             )
         }
         _ => unimplemented!("Unsupported literal: {:#?}", pair),
+    }
+}
+
+impl Term {
+    pub fn eval(&self, env: &HashMap<String, Literal>) -> Option<Literal> {
+        match self {
+            Term::Identifier(s) => env.get(s).cloned(),
+            Term::Literal(lit) => Some(lit.clone()),
+            Term::Application(f, args) => {
+                let args = args.iter().map(|t| t.eval(env)).collect::<Option<_>>()?;
+                Self::call(f, args)
+            }
+        }
+    }
+
+    fn call(f: &String, args: Vec<Literal>) -> Option<Literal> {
+        match (f.as_str(), args.as_slice()) {
+            // Core
+            ("not", [Literal::Bool(b)]) => Some((!*b).into()),
+
+            ("=>", [Literal::Bool(x), Literal::Bool(y)]) => Some((!*x || *y).into()),
+
+            ("and", [Literal::Bool(x), Literal::Bool(y)]) => Some((*x && *y).into()),
+
+            ("or", [Literal::Bool(x), Literal::Bool(y)]) => Some((*x || *y).into()),
+
+            ("xor", [Literal::Bool(x), Literal::Bool(y)]) => Some((*x ^ *y).into()),
+
+            ("=", [Literal::Bool(x), Literal::Bool(y)]) => Some((*x == *y).into()),
+            ("=", [Literal::Numeral(x), Literal::Numeral(y)]) => Some((*x == *y).into()),
+            ("=", [Literal::String(x), Literal::String(y)]) => Some((*x == *y).into()),
+
+            ("distinct", [Literal::Bool(x), Literal::Bool(y)]) => Some((*x != *y).into()),
+            ("distinct", [Literal::Numeral(x), Literal::Numeral(y)]) => Some((*x != *y).into()),
+            ("distinct", [Literal::String(x), Literal::String(y)]) => Some((*x != *y).into()),
+
+            ("ite", [Literal::Bool(c), t @ Literal::Bool(_), e @ Literal::Bool(_)]) => {
+                Some(if *c { t } else { e }.clone())
+            }
+            ("ite", [Literal::Bool(c), t @ Literal::Numeral(_), e @ Literal::Numeral(_)]) => {
+                Some(if *c { t } else { e }.clone())
+            }
+            ("ite", [Literal::Bool(c), t @ Literal::String(_), e @ Literal::String(_)]) => {
+                Some(if *c { t } else { e }.clone())
+            }
+
+            // Ints
+            ("-", [Literal::Numeral(n)]) => Some((-*n).into()),
+
+            ("-", [Literal::Numeral(x), Literal::Numeral(y)]) => Some((*x - *y).into()),
+
+            ("+", [Literal::Numeral(x), Literal::Numeral(y)]) => Some((*x + *y).into()),
+
+            ("*", [Literal::Numeral(x), Literal::Numeral(y)]) => Some((*x * *y).into()),
+
+            ("div", [Literal::Numeral(x), Literal::Numeral(y)]) if *y != 0 => {
+                Some((*x / *y).into())
+            }
+
+            ("mod", [Literal::Numeral(x), Literal::Numeral(y)]) => Some((*x % *y).into()),
+
+            ("abs", [Literal::Numeral(n)]) => Some((*n).abs().into()),
+
+            ("<=", [Literal::Numeral(x), Literal::Numeral(y)]) => Some((*x <= *y).into()),
+
+            ("<", [Literal::Numeral(x), Literal::Numeral(y)]) => Some((*x < *y).into()),
+
+            (">=", [Literal::Numeral(x), Literal::Numeral(y)]) => Some((*x >= *y).into()),
+
+            (">", [Literal::Numeral(x), Literal::Numeral(y)]) => Some((*x > *y).into()),
+
+            // String functions
+            ("str.++", [Literal::String(a), Literal::String(b)]) => Some((a.to_owned() + b).into()),
+
+            ("str.len", [Literal::String(s)]) => Some((s.len() as i64).into()),
+
+            ("str.<", [Literal::String(a), Literal::String(b)]) => Some((a < b).into()),
+
+            // String additional functions
+            ("str.<=", [Literal::String(a), Literal::String(b)]) => Some((a <= b).into()),
+
+            ("str.at", [Literal::String(s), Literal::Numeral(n)]) => Some(
+                s.bytes()
+                    .nth(*n as usize)
+                    .map_or("".to_string(), |c| c.to_string())
+                    .into(),
+            ),
+
+            (
+                "str.substr",
+                [Literal::String(s), Literal::Numeral(start), Literal::Numeral(end)],
+            ) => Some(
+                s.substring(*start as usize, *end as usize)
+                    .to_string()
+                    .into(),
+            ),
+
+            ("str.prefixof", [Literal::String(s), Literal::String(t)]) => {
+                Some(s.starts_with(t).into())
+            }
+
+            ("str.suffixof", [Literal::String(s), Literal::String(t)]) => {
+                Some(s.ends_with(t).into())
+            }
+
+            ("str.contains", [Literal::String(s), Literal::String(t)]) => {
+                Some(s.contains(t).into())
+            }
+
+            ("str.indexof", [Literal::String(s), Literal::String(t), Literal::Numeral(i)])
+                if *i >= 0 =>
+            {
+                Some(
+                    (s.chars()
+                        .into_iter()
+                        .skip(*i as usize)
+                        .collect::<String>()
+                        .find(t)
+                        .map_or(-1, |i| i as i64))
+                    .into(),
+                )
+            }
+
+            ("str.replace", [Literal::String(s), Literal::String(t), Literal::String(u)]) => {
+                Some(s.replacen(t, u, 1).into())
+            }
+
+            ("str.replace_all", [Literal::String(s), Literal::String(t), Literal::String(u)]) => {
+                Some(s.replace(t, u).into())
+            }
+
+            _ => None,
+        }
     }
 }

@@ -2,7 +2,7 @@ use crate::sygus::{BFTerm, GTerm, Grammar, Term};
 use itertools::Itertools;
 use std::collections::HashMap;
 
-pub fn bottom_up(grammar: Grammar, depth: usize) -> HashMap<String, Vec<Term>> {
+pub fn bottom_up(grammar: &Grammar, depth: usize) -> HashMap<String, Vec<Term>> {
     let mut bank: HashMap<(String, usize), Vec<Term>> = HashMap::new();
     for d in 0..depth {
         for (name, _, rhs) in &grammar.rules[1..] {
