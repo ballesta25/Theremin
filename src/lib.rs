@@ -153,9 +153,7 @@ pub fn build_runner(examples: Spec) -> Runner<SLIALang, Spec> {
     runner.egraph.set_analysis_data(0.into(), examples);
     runner.egraph.rebuild();
 
-    runner = runner.run(&rules);
-
-    runner
+    runner.run(&rules)
 }
 
 pub fn add(left: usize, right: usize) -> usize {
