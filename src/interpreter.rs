@@ -243,7 +243,7 @@ impl Eval for Func {
                                         .collect::<String>(),
                                 ))
                             } else {
-                                let j = &(a1.len() as i64) - a2;
+                                let j = (a1.len() as i64) - a2;
                                 Ok(Expr::ConstStr(
                                     a1.chars()
                                         .skip(*a2 as usize)
@@ -474,7 +474,7 @@ impl Translate for RegLang {
         match self {
             RegLang::Nil => Regex::new(r"[^$]").unwrap(),
             RegLang::All => Regex::new(r"^[ -~]+$").unwrap(),
-            RegLang::AllChar => Regex::new(r"(?!\A)").unwrap(),
+            RegLang::AllChar => unimplemented!(), // Regex::new(r"(?!\A)").unwrap(), // look-around is not supported
             RegLang::RCall(j) => (*j).clone().translate(),
         }
     }
@@ -527,7 +527,7 @@ impl Translate for RegFun {
                 let eval1 = arg1.clone().eval(&j).clone();
 
                 match eval1 {
-                    Ok(Expr::ConstStr(a)) => Regex::new(&format!("{}", a)).unwrap(),
+                    Ok(Expr::ConstStr(a)) => Regex::new(&a.to_string()).unwrap(),
                     _ => RegLang::Nil.translate(),
                 }
             }

@@ -204,7 +204,7 @@ impl TryFrom<&Term> for Expr {
                     let b = params.get(1).unwrap().try_into()?;
                     Box::new(Func::Append(a, b))
                 }
-                "str.len" if params.len() >= 1 => {
+                "str.len" if !params.is_empty() => {
                     let a = params.get(0).unwrap().try_into()?;
                     Box::new(Func::StrLen(a))
                 }
@@ -288,7 +288,7 @@ impl TryFrom<&Term> for Expr {
                     let b = params.get(1).unwrap().try_into()?;
                     Box::new(Func::Min(a, b))
                 }
-                "-" if params.len() >= 1 => {
+                "-" if !params.is_empty() => {
                     let a = params.get(0).unwrap().try_into()?;
                     Box::new(Func::NegI(a))
                 }
@@ -302,7 +302,7 @@ impl TryFrom<&Term> for Expr {
                     let b = params.get(1).unwrap().try_into()?;
                     Box::new(Func::Div(a, b))
                 }
-                "abs" if params.len() >= 1 => {
+                "abs" if !params.is_empty() => {
                     let a = params.get(0).unwrap().try_into()?;
                     Box::new(Func::Abs(a))
                 }
@@ -326,11 +326,11 @@ impl TryFrom<&Term> for Expr {
                     let b = params.get(1).unwrap().try_into()?;
                     Box::new(Func::LexLeq(a, b))
                 }
-                "int.to.str" if params.len() >= 1 => {
+                "int.to.str" if !params.is_empty() => {
                     let a = params.get(0).unwrap().try_into()?;
                     Box::new(Func::IntToStr(a))
                 }
-                "str.to.int" if params.len() >= 1 => {
+                "str.to.int" if !params.is_empty() => {
                     let a = params.get(0).unwrap().try_into()?;
                     Box::new(Func::StrToInt(a))
                 }
@@ -500,8 +500,8 @@ impl Term {
         }
     }
 
-    fn call(f: &String, args: Vec<Literal>) -> Option<Literal> {
-        match (f.as_str(), args.as_slice()) {
+    fn call(f: &str, args: Vec<Literal>) -> Option<Literal> {
+        match (f, args.as_slice()) {
             // Core
             ("not", [Literal::Bool(b)]) => Some((!*b).into()),
 
@@ -567,9 +567,9 @@ impl Term {
             ("str.<=", [Literal::String(a), Literal::String(b)]) => Some((a <= b).into()),
 
             ("str.at", [Literal::String(s), Literal::Numeral(n)]) => Some(
-                s.bytes()
-                    .nth(*n as usize)
-                    .map_or("".to_string(), |c| c.to_string())
+                s.as_bytes()
+                    .get(*n as usize)
+                    .map_or("".into(), |c| c.to_string())
                     .into(),
             ),
 
@@ -599,7 +599,6 @@ impl Term {
             {
                 Some(
                     (s.chars()
-                        .into_iter()
                         .skip(*i as usize)
                         .collect::<String>()
                         .find(t)

@@ -3,10 +3,7 @@ use crate::Spec;
 use std::cmp;
 
 fn test_valid(example: &Option<(Expr, Expr)>) -> bool {
-    match example {
-        None => true,
-        _ => false,
-    }
+    example.is_none()
 }
 
 fn unwrap_vec(vecs: Vec<Option<(Expr, Expr)>>) -> Spec {
@@ -30,7 +27,7 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                         .iter()
                         .map(|(i, o)| match (i, o) {
                             (Expr::ConstStr(inn), Expr::ConstStr(out)) => {
-                                if let Some(_) = inn.find(out) {
+                                if inn.contains(out) {
                                     Some((Expr::ConstStr(inn.clone()), Expr::ConstStr(inn.clone())))
                                 } else {
                                     None
@@ -48,11 +45,7 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                         .iter()
                         .map(|(i, o)| match (i, o) {
                             (Expr::ConstStr(inn), Expr::ConstStr(out)) => {
-                                if let Some(k) = inn.find(out) {
-                                    Some((i.clone(), Expr::ConstInt(k as i64)))
-                                } else {
-                                    None
-                                }
+                                inn.find(out).map(|k| (i.clone(), Expr::ConstInt(k as i64)))
                             }
                             _ => None,
                         })
@@ -65,13 +58,9 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                     let temp: Vec<Option<(Expr, Expr)>> = a
                         .iter()
                         .map(|(i, o)| match (i, o) {
-                            (Expr::ConstStr(inn), Expr::ConstStr(out)) => {
-                                if let Some(k) = inn.find(out) {
-                                    Some((i.clone(), Expr::ConstInt((k + out.len()) as i64)))
-                                } else {
-                                    None
-                                }
-                            }
+                            (Expr::ConstStr(inn), Expr::ConstStr(out)) => inn
+                                .find(out)
+                                .map(|k| (i.clone(), Expr::ConstInt((k + out.len()) as i64))),
                             _ => None,
                         })
                         .collect();
@@ -204,7 +193,7 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                         .iter()
                         .map(|(i, o)| match (i, o) {
                             (Expr::ConstStr(inn), Expr::ConstStr(out)) => {
-                                if let Some(_) = inn.find(out) {
+                                if inn.contains(out) {
                                     None
                                 } else {
                                     Some((Expr::ConstStr(inn.clone()), Expr::ConstStr(inn.clone())))
@@ -223,7 +212,7 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                         .map(|(i, o)| {
                             match (i, o) {
                                 (Expr::ConstStr(inn), Expr::ConstStr(out)) => {
-                                    if let Some(_) = inn.find(out) {
+                                    if inn.contains(out) {
                                         // again we are assuming that if a replacement string has the original string in it,
                                         // replace is the wrong function and is therefore impossible
                                         None
@@ -285,7 +274,7 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                         .map(|(i, o)| {
                             match (i, o) {
                                 (Expr::ConstStr(inn), Expr::ConstStr(out)) => {
-                                    if let Some(_) = inn.find(out) {
+                                    if inn.contains(out) {
                                         // again we are assuming that if a replacement string has the original string in it,
                                         // replace is the wrong function and is therefore impossible
                                         None
@@ -347,7 +336,7 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                         .map(|(i, o)| {
                             match (i, o) {
                                 (Expr::ConstStr(inn), Expr::ConstStr(out)) => {
-                                    if let Some(_) = inn.find(out) {
+                                    if inn.contains(out) {
                                         //if it even exists within the other string
                                         Some((
                                             Expr::ConstStr(inn.clone()),
@@ -371,7 +360,7 @@ pub fn invert(spec: &Spec, symbol: &str) -> Spec {
                         .map(|(i, o)| {
                             match (i, o) {
                                 (Expr::ConstStr(inn), Expr::ConstStr(out)) => {
-                                    if let Some(_) = inn.find(out) {
+                                    if inn.contains(out) {
                                         //if it even exists within the other string
                                         Some((
                                             Expr::ConstStr(inn.clone()),
