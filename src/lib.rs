@@ -161,8 +161,8 @@ pub fn get_term(
     fills: &HashMap<Id, Expr>,
     prgm: &RecExpr<SLIALang>,
 ) -> Term {
-    let ids = egraph.lookup_expr_ids(&prgm).unwrap();
-    get_term_rec(&egraph, &fills, &prgm, &ids, ids.len() - 1)
+    let ids = egraph.lookup_expr_ids(prgm).unwrap();
+    get_term_rec(fills, prgm, &ids, ids.len() - 1)
 }
 
 enum ArgsVariant<X, Y> {
@@ -173,7 +173,6 @@ enum ArgsVariant<X, Y> {
 use crate::ArgsVariant::*;
 
 fn get_term_rec(
-    egraph: &EGraph<SLIALang, Spec>,
     fills: &HashMap<Id, Expr>,
     prgm: &RecExpr<SLIALang>,
     ids: &Vec<Id>,
@@ -216,7 +215,7 @@ fn get_term_rec(
         let subterms: Vec<Expr> = prgm[i.into()]
             .children
             .iter()
-            .filter_map(|id| get_term_rec(egraph, fills, prgm, ids, usize::from(*id)).ok())
+            .filter_map(|id| get_term_rec(fills, prgm, ids, usize::from(*id)).ok())
             .collect();
         match constructor {
             One(f) => Ok(Expr::Call(Box::new(f(subterms[0].clone())))),
