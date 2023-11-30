@@ -6,7 +6,7 @@ pub mod sygus;
 
 use egg::{self, CostFunction, EGraph, Id, Language, RecExpr, Rewrite, Runner, SymbolLang};
 use egg::{rewrite as rw, Analysis, DidMerge};
-use language::{Eval, Expr};
+use language::{Eval, Expr, Func::*, Term};
 use std::collections::HashMap;
 
 pub type SLIALang = SymbolLang;
@@ -156,8 +156,81 @@ pub fn build_runner(examples: Spec) -> Runner<SLIALang, Spec> {
     runner.run(&rules)
 }
 
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
+pub fn get_term(
+    egraph: &EGraph<SLIALang, Spec>,
+    fills: &HashMap<Id, Expr>,
+    prgm: &RecExpr<SLIALang>,
+) -> Term {
+    let ids = egraph.lookup_expr_ids(&prgm).unwrap();
+    get_term_rec(&egraph, &fills, &prgm, &ids, ids.len() - 1)
+}
+
+enum ArgsVariant<X, Y> {
+    One(fn(X) -> Y),
+    Two(fn(X, X) -> Y),
+    Three(fn(X, X, X) -> Y),
+}
+use crate::ArgsVariant::*;
+
+fn get_term_rec(
+    egraph: &EGraph<SLIALang, Spec>,
+    fills: &HashMap<Id, Expr>,
+    prgm: &RecExpr<SLIALang>,
+    ids: &Vec<Id>,
+    i: usize,
+) -> Term {
+    if fills.contains_key(&ids[i]) {
+        Ok(fills[&ids[i]].clone())
+    } else {
+        let constructor = match prgm[i.into()].op.as_str() {
+            "Append" => Two(Append),
+            "StrLen" => One(StrLen),
+            "StrAt" => Two(StrAt),
+            "SubStr" => Three(SubStr),
+            "IsPre" => Two(IsPre),
+            "IsPost" => Two(IsPost),
+            "Contains" => Two(Contains),
+            "Index" => Three(Index),
+            "Replace" => Three(Replace),
+            "ReplaceAll" => Three(ReplaceAll),
+            "Leq" => Two(Leq),
+            "Geq" => Two(Geq),
+            "Eql" => Two(Eql),
+            "Add" => Two(Add),
+            "Min" => Two(Min),
+            "Mult" => Two(Mult),
+            "Div" => Two(Div),
+            "Abs" => One(Abs),
+            "Mod" => Two(Mod),
+            "NegI" => One(NegI),
+            "NegB" => One(NegB),
+            "And" => Two(And),
+            "Or" => Two(Or),
+            "LexEq" => Two(LexEq),
+            "LexLeq" => Two(LexLeq),
+            "LexGeq" => Two(LexGeq),
+            "StrToInt" => One(StrToInt),
+            "IntToStr" => One(IntToStr),
+            _ => return Err("not a complete program".into()),
+        };
+        let subterms: Vec<Expr> = prgm[i.into()]
+            .children
+            .iter()
+            .filter_map(|id| get_term_rec(egraph, fills, prgm, ids, usize::from(*id)).ok())
+            .collect();
+        match constructor {
+            One(f) => Ok(Expr::Call(Box::new(f(subterms[0].clone())))),
+            Two(f) => Ok(Expr::Call(Box::new(f(
+                subterms[0].clone(),
+                subterms[1].clone(),
+            )))),
+            Three(f) => Ok(Expr::Call(Box::new(f(
+                subterms[0].clone(),
+                subterms[1].clone(),
+                subterms[2].clone(),
+            )))),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -203,11 +276,5 @@ mod tests {
             "Result: {} with cost: {} unfillable, {} holes, {} size",
             best, cost_a, cost_b, cost_c,
         );
-    }
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
     }
 }

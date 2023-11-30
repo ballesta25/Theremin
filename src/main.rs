@@ -1,6 +1,6 @@
 use egg::Extractor;
 use std::{collections::HashMap, env, fs, time::Instant};
-use theremin::{build_runner, enumerate, language::Expr, sygus, EvalCostFn, Spec};
+use theremin::{build_runner, enumerate, get_term, language::Expr, sygus, EvalCostFn, Spec};
 
 fn main() {
     let args: Vec<String> = env::args().take(3).collect();
@@ -38,19 +38,24 @@ fn main() {
 
     let now = Instant::now();
     let runner = build_runner(Spec::Examples(specification));
-
+    println!(
+        "Egraph runner construction took {}",
+        now.elapsed().as_secs_f64()
+    );
     let mut fills = HashMap::new();
 
     let cost_function = EvalCostFn::new(&runner.egraph, &components, &mut fills);
 
+    let now = Instant::now();
     let ((cost_a, cost_b, cost_c), best) =
         Extractor::new(&runner.egraph, cost_function).find_best(runner.roots[0]);
-    println!("Egg took {}", now.elapsed().as_secs_f64());
+    println!("Extraction took {}", now.elapsed().as_secs_f64());
 
-    // println!("fills: {:#?}", fills);
+    println!("fills: {:#?}", fills);
     println!(
         "Result: {} with cost: {} unfillable, {} holes, {} size",
         best, cost_a, cost_b, cost_c,
     );
-    // println!("{:?}", runner.egraph.lookup_expr_ids(&best));
+    println!("{:?}", runner.egraph.lookup_expr_ids(&best));
+    println!("{:#?}", get_term(&runner.egraph, &fills, &best));
 }
