@@ -210,13 +210,19 @@ fn get_term_rec(
             "LexGeq" => Two(LexGeq),
             "StrToInt" => One(StrToInt),
             "IntToStr" => One(IntToStr),
-            _ => return Err("not a complete program".into()),
+            _ => {
+                return Err(format!(
+                    "not a complete program: unfilled hole with label: {}",
+                    prgm[i.into()].op.as_str()
+                )
+                .into())
+            }
         };
         let subterms: Vec<Expr> = prgm[i.into()]
             .children
             .iter()
-            .filter_map(|id| get_term_rec(fills, prgm, ids, usize::from(*id)).ok())
-            .collect();
+            .map(|id| get_term_rec(fills, prgm, ids, usize::from(*id)))
+            .collect::<Result<Vec<Expr>, String>>()?;
         match constructor {
             One(f) => Ok(Expr::Call(Box::new(f(subterms[0].clone())))),
             Two(f) => Ok(Expr::Call(Box::new(f(
